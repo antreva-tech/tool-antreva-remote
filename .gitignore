@@ -1,0 +1,14 @@
+.env
+*.log
+*.tmp
+*.bak
+artifacts/
+dist/
+release/
+infra/office-server/data/
+infra/office-server/.env.local
+upstream/**/target/
+upstream/**/build/
+upstream/**/.dart_tool/
+upstream/**/.flutter-plugins
+upstream/**/.flutter-plugins-dependencies

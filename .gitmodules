@@ -1,0 +1,6 @@
+[submodule "upstream/rustdesk"]
+	path = upstream/rustdesk
+	url = https://github.com/rustdesk/rustdesk.git
+[submodule "upstream/rustdesk-server"]
+	path = upstream/rustdesk-server
+	url = https://github.com/rustdesk/rustdesk-server.git

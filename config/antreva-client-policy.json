@@ -1,0 +1,41 @@
+{
+  "productName": "Antreva Remote",
+  "channel": "mvp-attended-windows",
+  "rustdeskOptions": {
+    "custom-rendezvous-server": "remote.antreva.example",
+    "relay-server": "remote.antreva.example",
+    "key": "REPLACE_WITH_OFFICE_RUSTDESK_PUBLIC_KEY",
+    "access-mode": "click",
+    "approve-mode": "click",
+    "verification-method": "use-temporary-password",
+    "enable-keyboard": "Y",
+    "enable-clipboard": "Y",
+    "enable-file-transfer": "Y",
+    "enable-file-copy-paste": "Y",
+    "one-way-file-transfer": "N",
+    "file-transfer-max-files": "200",
+    "enable-terminal": "N",
+    "enable-tunnel": "N",
+    "enable-remote-printer": "N",
+    "enable-remote-restart": "N",
+    "enable-record-session": "N",
+    "enable-block-input": "N",
+    "enable-privacy-mode": "N",
+    "allow-remote-config-modification": "N",
+    "allow-auto-update": "N",
+    "hide-tray": "N",
+    "hide-server-settings": "Y",
+    "hide-proxy-settings": "Y",
+    "hide-security-settings": "N",
+    "hide-stop-service": "Y",
+    "disable-change-permanent-password": "Y",
+    "disable-change-id": "Y",
+    "disable-unlock-pin": "Y"
+  },
+  "releaseGates": {
+    "requiresCodeSigning": true,
+    "requiresSourceOffer": true,
+    "requiresVisibleClientConsent": true,
+    "allowsUnattendedAccess": false
+  }
+}
