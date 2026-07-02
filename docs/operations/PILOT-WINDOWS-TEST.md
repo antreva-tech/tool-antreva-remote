@@ -34,7 +34,7 @@ The script will:
 - relaunch itself as Administrator if needed;
 - prompt the technician for the permanent support password;
 - install the RustDesk service;
-- apply the Antreva server and managed-access settings;
+- apply and verify the Antreva server and managed-access settings;
 - launch RustDesk when configuration finishes.
 
 ## Managed Access Test Flow

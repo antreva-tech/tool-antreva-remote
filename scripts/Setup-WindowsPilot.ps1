@@ -188,12 +188,26 @@ function Invoke-RustDeskManagedInstall {
 
     $deadline = (Get-Date).AddSeconds(120)
     $postExitDeadline = $null
+    $installCompletionDeadline = $null
+    $installedExe = $null
 
     while ((Get-Date) -lt $deadline) {
         Start-Sleep -Seconds 2
 
-        $installedExe = Get-InstalledRustDeskExe
-        if (-not [string]::IsNullOrWhiteSpace($installedExe)) {
+        if ([string]::IsNullOrWhiteSpace($installedExe)) {
+            $installedExe = Get-InstalledRustDeskExe
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($installedExe) -and $process.HasExited) {
+            return $installedExe
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($installedExe) -and $null -eq $installCompletionDeadline) {
+            Write-Output 'Installed executable found. Waiting for RustDesk installer finalization...'
+            $installCompletionDeadline = (Get-Date).AddSeconds(20)
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($installedExe) -and $null -ne $installCompletionDeadline -and (Get-Date) -ge $installCompletionDeadline) {
             if (-not $process.HasExited) {
                 Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             }

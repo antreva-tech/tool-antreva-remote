@@ -13,6 +13,7 @@ try {
     & (Join-Path $ScriptDir 'Validate-AntrevaRemote.ps1') -AllowPlaceholders | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskReleaseNaming.ps1') | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskWindowsSupport.ps1') | Out-Null
+    & (Join-Path $ScriptDir 'Test-AntrevaDeskCustomServerInstall.ps1') | Out-Null
 
     $required = @(
         'README.md',
@@ -24,6 +25,7 @@ try {
         'scripts\Apply-AntrevaClientPolicy.ps1',
         'scripts\Test-AntrevaDeskReleaseNaming.ps1',
         'scripts\Test-AntrevaDeskWindowsSupport.ps1',
+        'scripts\Test-AntrevaDeskCustomServerInstall.ps1',
         'scripts\Build-WindowsRelease.ps1'
     )
 

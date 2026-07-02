@@ -39,6 +39,7 @@ The setup will:
 - verify the supported Windows 7-11 x64 client matrix;
 - request administrator elevation;
 - install the RustDesk service;
+- import and verify the Antreva ID server, relay server, and public key;
 - prompt the technician to enter and confirm the permanent support password;
 - apply Antreva server and managed-access settings;
 - create visible `Antreva Desk` shortcuts;

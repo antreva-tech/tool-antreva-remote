@@ -186,6 +186,73 @@ function Invoke-RustDeskOption {
     }
 }
 
+function Get-RustDeskOption {
+    param(
+        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)][string]$Name
+    )
+
+    $output = & $RustDeskExe --option $Name 2>&1
+    $text = ($output | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to read RustDesk option '$Name' with exit code $LASTEXITCODE. $text"
+    }
+    if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
+        throw "Failed to read RustDesk option '$Name'. $text"
+    }
+
+    return $text
+}
+
+function Assert-RustDeskOption {
+    param(
+        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$ExpectedValue
+    )
+
+    $actual = ''
+    $deadline = (Get-Date).AddSeconds(15)
+    while ((Get-Date) -lt $deadline) {
+        $actual = Get-RustDeskOption -RustDeskExe $RustDeskExe -Name $Name
+        if ($actual -eq $ExpectedValue) {
+            return
+        }
+
+        Start-Sleep -Seconds 1
+    }
+
+    throw "RustDesk option '$Name' did not verify. Expected '$ExpectedValue' but got '$actual'."
+}
+
+function Import-RustDeskCustomServerConfig {
+    param(
+        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)][string]$ConfigName
+    )
+
+    Write-Output "Importing Antreva server configuration from installer name..."
+    $output = & $RustDeskExe --config $ConfigName 2>&1
+    $text = ($output | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0) {
+        throw "Failed to import Antreva server configuration with exit code $LASTEXITCODE. $text"
+    }
+    if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
+        throw "Failed to import Antreva server configuration. $text"
+    }
+}
+
+function Assert-RustDeskManagedOptions {
+    param(
+        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)][hashtable]$Options
+    )
+
+    foreach ($property in $Options.GetEnumerator()) {
+        Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name $property.Key -ExpectedValue ([string]$property.Value)
+    }
+}
+
 function Set-RustDeskPermanentPassword {
     param(
         [Parameter(Mandatory = $true)][string]$RustDeskExe,
@@ -216,12 +283,26 @@ function Invoke-RustDeskManagedInstall {
 
     $deadline = (Get-Date).AddSeconds(120)
     $postExitDeadline = $null
+    $installCompletionDeadline = $null
+    $installedExe = $null
 
     while ((Get-Date) -lt $deadline) {
         Start-Sleep -Seconds 2
 
-        $installedExe = Get-InstalledRustDeskExe
-        if (-not [string]::IsNullOrWhiteSpace($installedExe)) {
+        if ([string]::IsNullOrWhiteSpace($installedExe)) {
+            $installedExe = Get-InstalledRustDeskExe
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($installedExe) -and $process.HasExited) {
+            return $installedExe
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($installedExe) -and $null -eq $installCompletionDeadline) {
+            Write-Output 'Installed executable found. Waiting for RustDesk installer finalization...'
+            $installCompletionDeadline = (Get-Date).AddSeconds(20)
+        }
+
+        if (-not [string]::IsNullOrWhiteSpace($installedExe) -and $null -ne $installCompletionDeadline -and (Get-Date) -ge $installCompletionDeadline) {
             if (-not $process.HasExited) {
                 Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
             }
@@ -302,9 +383,12 @@ try {
     Write-Output "Installing Antreva Desk managed access service..."
     $installedExe = Invoke-RustDeskManagedInstall -InstallerExe $PortableExe
 
+    Import-RustDeskCustomServerConfig -RustDeskExe $installedExe -ConfigName (Split-Path -Leaf $PortableExe)
+
     foreach ($property in $ManagedOptions.GetEnumerator()) {
         Invoke-RustDeskOption -RustDeskExe $installedExe -Name $property.Key -Value $property.Value
     }
+    Assert-RustDeskManagedOptions -RustDeskExe $installedExe -Options $ManagedOptions
 
     Write-Output "Setting permanent support password..."
     Set-RustDeskPermanentPassword -RustDeskExe $installedExe -Password $plainPassword1
