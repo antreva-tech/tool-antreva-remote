@@ -55,6 +55,18 @@ trusted_devices = ''
 custom-rendezvous-server = '104.184.67.190'
 relay-server = '104.184.67.190'
 key = 'YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg='
+access-mode = 'click'
+approve-mode = 'click'
+verification-method = 'use-temporary-password'
+enable-file-transfer = 'Y'
+enable-file-copy-paste = 'Y'
+enable-terminal = 'N'
+enable-tunnel = 'N'
+enable-remote-printer = 'N'
+enable-remote-restart = 'N'
+enable-block-input = 'N'
+enable-privacy-mode = 'N'
+disable-change-permanent-password = 'Y'
 "@
 Set-Content -LiteralPath $RustDesk2Config -Value $rustDesk2Content -Encoding ASCII
 

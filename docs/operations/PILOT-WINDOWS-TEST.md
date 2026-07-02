@@ -57,10 +57,14 @@ Use two machines on different networks if possible.
 - Remote desktop control works after approval.
 - File transfer works in both directions during the approved session.
 - The client can end the session.
+- Permanent password/unattended access is not used in the v1 pilot.
 
 ## Known Pilot Limitations
 
 - The app still displays RustDesk branding.
 - The binary is signed by the upstream RustDesk publisher, not Antreva.
+- The stock RustDesk UI may still show permanent-password controls. Do not use
+  them for this pilot; a `Prompt failed` result there is outside the supported
+  attended-only test flow.
 - A final Antreva-branded build still needs the Windows build toolchain,
   branding assets, and Antreva code-signing certificate.

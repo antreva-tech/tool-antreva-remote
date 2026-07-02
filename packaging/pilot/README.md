@@ -73,5 +73,9 @@ both computers, and use the new ID shown by the client after the rerun.
 - The launcher and shortcuts are named Antreva Remote, but the app UI is still
   RustDesk-branded.
 - It is signed by the upstream RustDesk publisher, not Antreva.
+- Permanent password/unattended access is not supported in this v1 pilot. Use
+  the one-time password and visible client approval flow. If a tester tries to
+  set a permanent password and sees `Prompt failed`, that is not part of the
+  supported pilot flow.
 - The final Antreva Remote build will be separately branded and signed after
   Antreva code signing is ready.
