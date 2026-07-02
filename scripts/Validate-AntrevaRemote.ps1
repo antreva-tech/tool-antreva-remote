@@ -46,10 +46,18 @@ Assert-Equal 'enable-tunnel' $options.'enable-tunnel' 'N'
 Assert-Equal 'enable-privacy-mode' $options.'enable-privacy-mode' 'N'
 Assert-Equal 'allow-remote-config-modification' $options.'allow-remote-config-modification' 'N'
 Assert-Equal 'hide-tray' $options.'hide-tray' 'N'
-Assert-Equal 'disable-change-permanent-password' $options.'disable-change-permanent-password' 'Y'
+Assert-Equal 'access-mode' $options.'access-mode' 'password'
+Assert-Equal 'approve-mode' $options.'approve-mode' 'password'
+Assert-Equal 'verification-method' $options.'verification-method' 'use-permanent-password'
+Assert-Equal 'hide-stop-service' $options.'hide-stop-service' 'N'
+Assert-Equal 'disable-change-permanent-password' $options.'disable-change-permanent-password' 'N'
 
-if ($policy.releaseGates.allowsUnattendedAccess -ne $false) {
-    $errors.Add("releaseGates.allowsUnattendedAccess must be false.")
+if ($policy.releaseGates.allowsUnattendedAccess -ne $true) {
+    $errors.Add("releaseGates.allowsUnattendedAccess must be true.")
+}
+
+if ($policy.releaseGates.requiresVisibleOnboardingConsent -ne $true) {
+    $errors.Add("releaseGates.requiresVisibleOnboardingConsent must be true.")
 }
 
 if ($errors.Count -gt 0) {

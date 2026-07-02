@@ -27,9 +27,13 @@ foreach ($property in $options.PSObject.Properties) {
     $name = $property.Name
     $value = [string]$property.Value
     Write-Output "Applying RustDesk option: $name"
-    & $RustDeskExe --option $name $value
+    $output = & $RustDeskExe --option $name $value 2>&1
+    $text = ($output | Out-String).Trim()
     if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        throw "Failed to apply RustDesk option '$name' with exit code $LASTEXITCODE."
+        throw "Failed to apply RustDesk option '$name' with exit code $LASTEXITCODE. $text"
+    }
+    if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
+        throw "Failed to apply RustDesk option '$name'. $text"
     }
 }
 

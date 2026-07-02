@@ -91,7 +91,6 @@ Before distributing a branded Antreva build:
 - [ ] Build machine has signing tooling installed.
 - [ ] Signing access is limited to authorized maintainers.
 - [ ] `Antreva Remote.exe` is signed.
-- [ ] `Antreva Remote QuickSupport.exe` is signed.
 - [ ] Signature verifies with `Get-AuthenticodeSignature`.
 - [ ] Timestamp is present.
 - [ ] Source offer and AGPL notices are published with the release.
@@ -99,7 +98,7 @@ Before distributing a branded Antreva build:
 ## Current Pilot State
 
 The pilot currently uses the official signed RustDesk Windows binary configured
-for Antreva's server. That is enough to test connectivity, attended approval,
+for Antreva's server. That is enough to test connectivity, managed access,
 remote control, and file transfer.
 
 The final Antreva-branded release still needs:

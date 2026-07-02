@@ -1,13 +1,13 @@
-# Antreva Remote Pilot
+# Antreva Remote Managed Access Pilot
 
-This is a temporary pilot bundle for testing Antreva Remote while the
-Antreva-specific code signing and branded build are being prepared.
+This is a temporary pilot bundle for testing Antreva Remote Managed Access while
+the Antreva-specific code signing and branded build are being prepared.
 
 The included executable is the official RustDesk `1.4.8` Windows x86_64 binary,
-signed by the upstream RustDesk publisher. The EXE filename carries the
-Antreva RustDesk server settings using RustDesk's supported custom-client
-filename format. The setup script verifies the EXE hash and signature, installs
-a local launcher named `Antreva Remote`, then launches the app.
+signed by the upstream RustDesk publisher. The setup script verifies the EXE
+hash and signature, requests Windows administrator elevation, installs the
+RustDesk service, applies Antreva server settings, and prompts the technician to
+set the permanent support password.
 
 ## Contents
 
@@ -24,20 +24,26 @@ a local launcher named `Antreva Remote`, then launches the app.
 
 ## How to Run
 
-Double-click:
+During authorized onboarding, double-click:
 
 ```text
 Antreva-Remote-Pilot-Setup.cmd
 ```
 
-The RustDesk window should show the custom server warning/settings instead of
-using the public RustDesk server.
+The setup will:
+
+- request administrator elevation;
+- install the RustDesk service;
+- prompt the technician to enter and confirm the permanent support password;
+- apply Antreva server and managed-access settings;
+- create visible `Antreva Remote` shortcuts;
+- launch the installed app.
 
 The setup creates:
 
 - Desktop shortcut: `Antreva Remote`
 - Start Menu folder: `Antreva > Antreva Remote`
-- Local install folder: `%LOCALAPPDATA%\AntrevaRemotePilot`
+- Local launcher folder: `%LOCALAPPDATA%\AntrevaRemotePilot`
 
 Alternative PowerShell command:
 
@@ -46,36 +52,24 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\Configure-And-Launch-Antreva-Remote-Pilot.ps1
 ```
 
-This pilot does not install a Windows service. Use the `Antreva Remote`
-shortcut whenever you need a support session.
-
-If you previously installed normal RustDesk, close it before testing Antreva
-Remote. The pilot setup and shortcut also stop old `rustdesk.exe` processes so
-the session does not stay attached to RustDesk's public server. The setup also
-writes the Antreva ID server, relay server, and public key before launching.
-
-If you see `Failed to connect: the target device is offline or does not exist`,
-replace the bundle on both computers, rerun `Antreva-Remote-Pilot-Setup.cmd` on
-both computers, and use the new ID shown by the client after the rerun.
-
 ## Test Flow
 
-1. Run this bundle on the client computer and leave RustDesk open.
-2. Give the technician the RustDesk ID shown on the client computer.
-3. Run this bundle on the technician computer.
-4. The technician enters the client ID and starts the connection.
-5. The client approves the session.
-6. Test remote control and file transfer in both directions.
-7. End the session from the client side when finished.
+1. Run this bundle on the client computer during authorized onboarding.
+2. Approve the Windows administrator elevation prompt.
+3. Enter and confirm the permanent support password.
+4. Leave Antreva Remote/RustDesk running after setup finishes.
+5. Record the client RustDesk ID shown in the app.
+6. From the technician computer, connect to that ID using the permanent support
+   password.
+7. Test remote control and file transfer in both directions.
+8. Confirm the tray/app remains visible on the client computer.
 
 ## Limitations
 
 - The launcher and shortcuts are named Antreva Remote, but the app UI is still
   RustDesk-branded.
 - It is signed by the upstream RustDesk publisher, not Antreva.
-- Permanent password/unattended access is not supported in this v1 pilot. Use
-  the one-time password and visible client approval flow. If a tester tries to
-  set a permanent password and sees `Prompt failed`, that is not part of the
-  supported pilot flow.
+- The setup uses a visible Antreva onboarding script, but the underlying
+  RustDesk installer command is the upstream installer path.
 - The final Antreva Remote build will be separately branded and signed after
   Antreva code signing is ready.

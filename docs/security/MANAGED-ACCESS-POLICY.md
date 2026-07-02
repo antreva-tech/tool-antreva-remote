@@ -1,7 +1,9 @@
-# Attended Access Policy
+# Managed Access Policy
 
-This document is retained for historical context. Antreva Remote now uses the
-managed-access policy in `docs/security/MANAGED-ACCESS-POLICY.md`.
+Antreva Remote is a managed-access support tool for authorized client
+computers. The technician performs onboarding on the client machine, installs
+the Windows service, configures Antreva's RustDesk server, and sets the
+permanent support password.
 
 ## Required Behavior
 

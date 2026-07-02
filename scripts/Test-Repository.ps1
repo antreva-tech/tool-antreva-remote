@@ -15,7 +15,7 @@ try {
     $required = @(
         'README.md',
         'infra\office-server\docker-compose.yml',
-        'docs\security\ATTENDED-ACCESS-POLICY.md',
+        'docs\security\MANAGED-ACCESS-POLICY.md',
         'docs\compliance\AGPL-SOURCE-OFFER.md',
         'docs\compliance\RELEASE-CHECKLIST.md',
         'docs\operations\TEST-PLAN.md',

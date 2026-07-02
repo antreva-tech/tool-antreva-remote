@@ -137,7 +137,8 @@ Recommended follow-up: copy this backup to a secure off-machine location.
 
 ## Do Not Do
 
-- Do not enable unattended access unless Steven explicitly approves it.
+- Do not change managed-access behavior from the approved visible onboarding
+  flow.
 - Do not share, commit, or expose private key files from `infra/office-server/data/`.
 - Do not commit `infra/office-server/.env`.
 - Do not commit `infra/office-server/data/`.

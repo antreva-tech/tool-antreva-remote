@@ -1,4 +1,4 @@
-# Antreva Remote MVP Test Plan
+# Antreva Remote Managed Access Test Plan
 
 ## Server
 
@@ -7,13 +7,14 @@
 - Confirm `data/id_ed25519.pub` exists and matches the client policy key.
 - Confirm office router forwards TCP `21114:21119` and UDP `21116`.
 
-## Client Session
+## Managed Client Onboarding
 
-- Launch `Antreva Remote QuickSupport.exe` on a Windows client.
-- Confirm the app is visible and shows client ID/session information.
-- Start a technician connection from `Antreva Remote`.
-- Confirm the client approval prompt appears before control begins.
-- Confirm the client can end the session.
+- Run the Antreva Remote managed setup on a Windows client.
+- Confirm Windows administrator elevation is required.
+- Set the permanent support password during onboarding.
+- Confirm the app or tray is visible after installation.
+- Confirm the app shows client ID/session information.
+- Reboot the client and confirm the service starts.
 
 ## Remote Desktop
 
@@ -35,4 +36,6 @@
 
 - Confirm binaries are signed.
 - Confirm AGPL/source offer is visible.
-- Confirm no unattended access path is available in v1 defaults.
+- Confirm managed access requires visible onboarding.
+- Confirm no stealth startup, hidden tray behavior, disguised process, or silent
+  enrollment is available in v1 defaults.
