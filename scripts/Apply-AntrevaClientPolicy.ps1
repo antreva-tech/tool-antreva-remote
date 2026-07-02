@@ -62,6 +62,17 @@ function Assert-RustDeskOption {
     throw "RustDesk option '$Name' did not verify. Expected '$ExpectedValue' but got '$actual'."
 }
 
+function Assert-RustDeskServerOptions {
+    param(
+        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)]$Options
+    )
+
+    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'custom-rendezvous-server' -ExpectedValue ([string]$Options.'custom-rendezvous-server')
+    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'relay-server' -ExpectedValue ([string]$Options.'relay-server')
+    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'key' -ExpectedValue ([string]$Options.key)
+}
+
 foreach ($property in $options.PSObject.Properties) {
     $name = $property.Name
     $value = [string]$property.Value
@@ -74,11 +85,8 @@ foreach ($property in $options.PSObject.Properties) {
     if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
         throw "Failed to apply RustDesk option '$name'. $text"
     }
-    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name $name -ExpectedValue $value
 }
 
-Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'custom-rendezvous-server' -ExpectedValue ([string]$options.'custom-rendezvous-server')
-Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'relay-server' -ExpectedValue ([string]$options.'relay-server')
-Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'key' -ExpectedValue ([string]$options.key)
+Assert-RustDeskServerOptions -RustDeskExe $RustDeskExe -Options $options
 
 Write-Output "Antreva Desk client policy applied."

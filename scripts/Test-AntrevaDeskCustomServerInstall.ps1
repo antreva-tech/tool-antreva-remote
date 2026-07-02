@@ -29,6 +29,18 @@ function Assert-Contains {
     }
 }
 
+function Assert-NotContains {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Text,
+        [Parameter(Mandatory = $true)][string]$Unexpected
+    )
+
+    if ($Text.Contains($Unexpected)) {
+        throw "Custom server install check failed: $Name must not contain '$Unexpected'."
+    }
+}
+
 $packagedSetup = Read-RepoFile 'packaging\pilot\Configure-And-Launch-Antreva-Remote-Pilot.ps1'
 $repoSetup = Read-RepoFile 'scripts\Setup-WindowsPilot.ps1'
 $applyPolicy = Read-RepoFile 'scripts\Apply-AntrevaClientPolicy.ps1'
@@ -56,9 +68,10 @@ foreach ($script in @($packagedSetup, $applyPolicy)) {
     Assert-Contains -Name 'custom rendezvous readback' -Text $script -Expected 'custom-rendezvous-server'
     Assert-Contains -Name 'relay readback' -Text $script -Expected 'relay-server'
     Assert-Contains -Name 'key readback' -Text $script -Expected 'Get-RustDeskOption'
+    Assert-Contains -Name 'custom server-only readback' -Text $script -Expected 'Assert-RustDeskServerOptions'
 }
 
-Assert-Contains -Name 'packaged managed options verification' -Text $packagedSetup -Expected 'Assert-RustDeskManagedOptions'
+Assert-NotContains -Name 'packaged all-option verification' -Text $packagedSetup -Unexpected 'Assert-RustDeskManagedOptions'
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskCustomServerInstall.ps1'
 
 Write-Output 'Antreva Desk custom server install verification passed.'

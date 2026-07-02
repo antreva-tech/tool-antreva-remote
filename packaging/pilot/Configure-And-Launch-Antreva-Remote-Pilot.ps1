@@ -287,15 +287,15 @@ function Import-RustDeskCustomServerConfig {
     }
 }
 
-function Assert-RustDeskManagedOptions {
+function Assert-RustDeskServerOptions {
     param(
         [Parameter(Mandatory = $true)][string]$RustDeskExe,
         [Parameter(Mandatory = $true)][hashtable]$Options
     )
 
-    foreach ($property in $Options.GetEnumerator()) {
-        Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name $property.Key -ExpectedValue ([string]$property.Value)
-    }
+    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'custom-rendezvous-server' -ExpectedValue ([string]$Options.'custom-rendezvous-server')
+    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'relay-server' -ExpectedValue ([string]$Options.'relay-server')
+    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'key' -ExpectedValue ([string]$Options.key)
 }
 
 function Set-RustDeskPermanentPassword {
@@ -430,7 +430,7 @@ try {
     foreach ($property in $ManagedOptions.GetEnumerator()) {
         Invoke-RustDeskOption -RustDeskExe $installedExe -Name $property.Key -Value $property.Value
     }
-    Assert-RustDeskManagedOptions -RustDeskExe $installedExe -Options $ManagedOptions
+    Assert-RustDeskServerOptions -RustDeskExe $installedExe -Options $ManagedOptions
 
     Write-Output "Setting permanent support password..."
     Set-RustDeskPermanentPassword -RustDeskExe $installedExe -Password $plainPassword1
