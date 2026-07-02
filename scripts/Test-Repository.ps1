@@ -12,6 +12,7 @@ try {
     Get-Content -LiteralPath 'config\antreva-client-policy.json' -Raw | ConvertFrom-Json | Out-Null
     & (Join-Path $ScriptDir 'Validate-AntrevaRemote.ps1') -AllowPlaceholders | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskReleaseNaming.ps1') | Out-Null
+    & (Join-Path $ScriptDir 'Test-AntrevaDeskWindowsSupport.ps1') | Out-Null
 
     $required = @(
         'README.md',
@@ -22,6 +23,7 @@ try {
         'docs\operations\TEST-PLAN.md',
         'scripts\Apply-AntrevaClientPolicy.ps1',
         'scripts\Test-AntrevaDeskReleaseNaming.ps1',
+        'scripts\Test-AntrevaDeskWindowsSupport.ps1',
         'scripts\Build-WindowsRelease.ps1'
     )
 

@@ -3,14 +3,20 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
+$MinimumPowerShellMajor = 3
+if ($PSVersionTable.PSVersion.Major -lt $MinimumPowerShellMajor) {
+    throw 'PowerShell 5.1 or newer is required on Windows 7. PowerShell 3 or newer is required on Windows 8 through Windows 11.'
+}
+
 $ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
 $PilotExeName = 'rustdesk-host=104.184.67.190,key=YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=,relay=104.184.67.190.exe'
 $PortableExe = Join-Path $PSScriptRoot $PilotExeName
 $InstallDir = Join-Path $env:LOCALAPPDATA 'AntrevaDesk'
 $Launcher = Join-Path $InstallDir 'Launch Antreva Desk.cmd'
 $ShortcutName = 'Antreva Desk'
+$SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x64'
 
-$ManagedOptions = [ordered]@{
+$ManagedOptions = @{
     'custom-rendezvous-server' = '104.184.67.190'
     'relay-server' = '104.184.67.190'
     'key' = 'YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg='
@@ -44,7 +50,7 @@ $ManagedOptions = [ordered]@{
 
 function Test-IsAdministrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
-    $principal = [Security.Principal.WindowsPrincipal]::new($identity)
+    $principal = New-Object Security.Principal.WindowsPrincipal($identity)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
@@ -59,6 +65,88 @@ function ConvertFrom-SecureStringForProcess {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
         }
     }
+}
+
+function Get-Sha256Hash {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $sha256 = [Security.Cryptography.SHA256]::Create()
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $hashBytes = $sha256.ComputeHash($stream)
+        return -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
+    } finally {
+        if ($null -ne $stream) {
+            $stream.Dispose()
+        }
+        if ($null -ne $sha256) {
+            $sha256.Dispose()
+        }
+    }
+}
+
+function Test-SupportedWindowsVersion {
+    $os = Get-WmiObject -Class Win32_OperatingSystem
+    $version = [Version]$os.Version
+    $servicePackMajor = [int]$os.ServicePackMajorVersion
+    $architecture = [string]$os.OSArchitecture
+    $caption = [string]$os.Caption
+
+    if ([int]$os.ProductType -ne 1) {
+        throw "Antreva Desk $SupportedWindowsLabel support is limited to Windows client editions. Detected: $caption."
+    }
+
+    if ($architecture -notmatch '64') {
+        throw "Antreva Desk $SupportedWindowsLabel support is x64 only. 32-bit Windows is not supported."
+    }
+
+    $isWindows7 = $version.Major -eq 6 -and $version.Minor -eq 1
+    $isWindows8 = $version.Major -eq 6 -and $version.Minor -eq 2
+    $isWindows81 = $version.Major -eq 6 -and $version.Minor -eq 3
+    $isWindows10Or11 = $version.Major -eq 10
+
+    if ($isWindows7 -and $servicePackMajor -lt 1) {
+        throw 'Windows 7 support requires Windows 7 SP1 x64. Install Service Pack 1, then run this setup again.'
+    }
+
+    if (-not ($isWindows7 -or $isWindows8 -or $isWindows81 -or $isWindows10Or11)) {
+        throw "Antreva Desk supports $SupportedWindowsLabel for this release. Detected: $caption $($os.Version)."
+    }
+
+    return [pscustomobject]@{
+        Caption = $caption
+        Version = $os.Version
+        Architecture = $architecture
+        IsWindows7 = $isWindows7
+    }
+}
+
+function Test-Windows7Prerequisites {
+    $version = $PSVersionTable.PSVersion
+    if ($version.Major -lt 5 -or ($version.Major -eq 5 -and $version.Minor -lt 1)) {
+        throw 'Windows 7 SP1 x64 support requires WMF 5.1 / PowerShell 5.1. Install Windows Management Framework 5.1, then run this setup again.'
+    }
+
+    $missingHotFixes = @()
+    foreach ($hotFixId in @('KB4490628', 'KB4474419')) {
+        $hotFix = Get-HotFix -Id $hotFixId -ErrorAction SilentlyContinue
+        if ($null -eq $hotFix) {
+            $missingHotFixes += $hotFixId
+        }
+    }
+
+    if ($missingHotFixes.Count -gt 0) {
+        throw "Windows 7 SP1 x64 support requires SHA-2 signing updates KB4490628 and KB4474419. Missing: $($missingHotFixes -join ', ')."
+    }
+}
+
+function Assert-AntrevaDeskWindowsSupport {
+    $windowsSupport = Test-SupportedWindowsVersion
+    if ($windowsSupport.IsWindows7) {
+        Test-Windows7Prerequisites
+    }
+
+    return $windowsSupport
 }
 
 function Get-InstalledRustDeskExe {
@@ -164,6 +252,9 @@ function Invoke-RustDeskManagedInstall {
     throw "RustDesk installation did not complete. Installer result: $exitCode. $installText"
 }
 
+$windowsSupport = Assert-AntrevaDeskWindowsSupport
+Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($windowsSupport.Version) $($windowsSupport.Architecture)."
+
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires administrator permission. Relaunching as Administrator..."
     $args = @(
@@ -179,7 +270,7 @@ if (-not (Test-Path -LiteralPath $PortableExe)) {
     throw "Missing pilot executable next to this script: $PortableExe"
 }
 
-$hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $PortableExe).Hash.ToLowerInvariant()
+$hash = Get-Sha256Hash -Path $PortableExe
 if ($hash -ne $ExpectedSha256) {
     throw "Pilot executable hash mismatch. Expected $ExpectedSha256 but got $hash."
 }

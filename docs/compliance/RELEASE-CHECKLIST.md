@@ -11,6 +11,9 @@ Complete this checklist before distributing a build to clients.
       Windows administrator approval.
 - [ ] No stealth startup, hidden tray behavior, disguised process, or silent
       enrollment is exposed in the branded v1 build.
+- [ ] Windows 7 SP1 through Windows 11 x64 support matrix has been certified.
+- [ ] Windows 7 prerequisite failures for WMF 5.1, KB4490628, and KB4474419
+      are visible before install.
 - [ ] Windows binaries are signed with the Antreva code signing certificate.
 - [ ] Source archive or repository tag is published for the exact build.
 - [ ] AGPL/source link is present near the binary download.

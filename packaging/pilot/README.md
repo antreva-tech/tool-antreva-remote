@@ -9,6 +9,10 @@ hash and signature, requests Windows administrator elevation, installs the
 RustDesk service, applies Antreva server settings, and prompts the technician to
 set the permanent support password.
 
+This pilot bundle supports Windows 7 SP1 through Windows 11 x64. Windows 7
+requires WMF 5.1 plus SHA-2 updates KB4490628 and KB4474419 before setup.
+32-bit Windows is not supported.
+
 ## Contents
 
 - `rustdesk-host=104.184.67.190,key=YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=,relay=104.184.67.190.exe`
@@ -32,6 +36,7 @@ Antreva-Remote-Pilot-Setup.cmd
 
 The setup will:
 
+- verify the supported Windows 7-11 x64 client matrix;
 - request administrator elevation;
 - install the RustDesk service;
 - prompt the technician to enter and confirm the permanent support password;

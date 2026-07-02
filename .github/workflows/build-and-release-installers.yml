@@ -66,6 +66,7 @@ jobs:
         run: |
           {
             echo "Antreva Desk 0.1.0 managed-access installer."
+            echo "Supports Windows 7 SP1 through Windows 11 x64. Windows 7 requires WMF 5.1, KB4490628, and KB4474419 before setup."
             echo
             echo "Built from commit: \`${GITHUB_SHA}\`"
             echo
