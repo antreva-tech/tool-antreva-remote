@@ -64,11 +64,16 @@ foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', 'Split-
 }
 
 foreach ($script in @($packagedSetup, $applyPolicy)) {
-    Assert-Contains -Name 'custom server readback helper' -Text $script -Expected 'Assert-RustDeskOption'
-    Assert-Contains -Name 'custom rendezvous readback' -Text $script -Expected 'custom-rendezvous-server'
-    Assert-Contains -Name 'relay readback' -Text $script -Expected 'relay-server'
-    Assert-Contains -Name 'key readback' -Text $script -Expected 'Get-RustDeskOption'
-    Assert-Contains -Name 'custom server-only readback' -Text $script -Expected 'Assert-RustDeskServerOptions'
+    Assert-Contains -Name 'custom server config path helper' -Text $script -Expected 'Get-RustDeskConfigPath'
+    Assert-Contains -Name 'custom server config parser' -Text $script -Expected 'Read-RustDeskConfigOptions'
+    Assert-Contains -Name 'custom server config assertion helper' -Text $script -Expected 'Assert-RustDeskConfigOption'
+    Assert-Contains -Name 'custom server persisted config file' -Text $script -Expected 'RustDesk2.toml'
+    Assert-Contains -Name 'custom server options section parser' -Text $script -Expected "-eq 'options'"
+    Assert-Contains -Name 'custom rendezvous persisted config verification' -Text $script -Expected 'custom-rendezvous-server'
+    Assert-Contains -Name 'relay persisted config verification' -Text $script -Expected 'relay-server'
+    Assert-Contains -Name 'key persisted config verification' -Text $script -Expected 'Assert-RustDeskConfigOption'
+    Assert-Contains -Name 'custom server-only persisted config verification' -Text $script -Expected 'Assert-RustDeskServerOptions'
+    Assert-NotContains -Name 'custom server verification via CLI readback' -Text $script -Unexpected 'Get-RustDeskOption -RustDeskExe $RustDeskExe -Name $Name'
 }
 
 Assert-NotContains -Name 'packaged all-option verification' -Text $packagedSetup -Unexpected 'Assert-RustDeskManagedOptions'

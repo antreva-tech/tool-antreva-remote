@@ -231,43 +231,80 @@ function Invoke-RustDeskOption {
     }
 }
 
-function Get-RustDeskOption {
-    param(
-        [Parameter(Mandatory = $true)][string]$RustDeskExe,
-        [Parameter(Mandatory = $true)][string]$Name
+function Get-RustDeskConfigPath {
+    $candidateRoots = @(
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData),
+        $env:APPDATA,
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData),
+        $env:ProgramData,
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData),
+        $env:LOCALAPPDATA
     )
-
-    $output = & $RustDeskExe --option $Name 2>&1
-    $text = ($output | Out-String).Trim()
-    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
-        throw "Failed to read RustDesk option '$Name' with exit code $LASTEXITCODE. $text"
-    }
-    if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
-        throw "Failed to read RustDesk option '$Name'. $text"
+    $candidates = @()
+    foreach ($root in $candidateRoots) {
+        if (-not [string]::IsNullOrWhiteSpace($root)) {
+            $candidates += (Join-Path $root 'RustDesk\config\RustDesk2.toml')
+        }
     }
 
-    return $text
+    $seen = @{}
+    foreach ($candidate in $candidates) {
+        if ($seen.ContainsKey($candidate)) {
+            continue
+        }
+        $seen[$candidate] = $true
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    throw "RustDesk2.toml was not found. Checked: $($seen.Keys -join '; ')"
 }
 
-function Assert-RustDeskOption {
+function Read-RustDeskConfigOptions {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $options = @{}
+    $inOptionsSection = $false
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        $trimmed = $line.Trim()
+        if ($trimmed -match '^\[(.+)\]$') {
+            $inOptionsSection = ($matches[1] -eq 'options')
+            continue
+        }
+        if (-not $inOptionsSection -or [string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith('#')) {
+            continue
+        }
+        if ($trimmed -match '^\s*([^=\s]+)\s*=\s*(.*?)\s*$') {
+            $name = $matches[1]
+            $value = $matches[2].Trim()
+            if ($value.Length -ge 2) {
+                if (($value.StartsWith("'") -and $value.EndsWith("'")) -or ($value.StartsWith('"') -and $value.EndsWith('"'))) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+            }
+            $options[$name] = $value
+        }
+    }
+
+    return $options
+}
+
+function Assert-RustDeskConfigOption {
     param(
-        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)][hashtable]$ConfigOptions,
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
         [Parameter(Mandatory = $true)][string]$Name,
         [Parameter(Mandatory = $true)][string]$ExpectedValue
     )
 
     $actual = ''
-    $deadline = (Get-Date).AddSeconds(15)
-    while ((Get-Date) -lt $deadline) {
-        $actual = Get-RustDeskOption -RustDeskExe $RustDeskExe -Name $Name
-        if ($actual -eq $ExpectedValue) {
-            return
-        }
-
-        Start-Sleep -Seconds 1
+    if ($ConfigOptions.ContainsKey($Name)) {
+        $actual = [string]$ConfigOptions[$Name]
     }
-
-    throw "RustDesk option '$Name' did not verify. Expected '$ExpectedValue' but got '$actual'."
+    if ($actual -ne $ExpectedValue) {
+        throw "RustDesk option '$Name' did not verify in RustDesk2.toml at $ConfigPath. Expected '$ExpectedValue' but got '$actual'."
+    }
 }
 
 function Import-RustDeskCustomServerConfig {
@@ -293,9 +330,25 @@ function Assert-RustDeskServerOptions {
         [Parameter(Mandatory = $true)][hashtable]$Options
     )
 
-    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'custom-rendezvous-server' -ExpectedValue ([string]$Options.'custom-rendezvous-server')
-    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'relay-server' -ExpectedValue ([string]$Options.'relay-server')
-    Assert-RustDeskOption -RustDeskExe $RustDeskExe -Name 'key' -ExpectedValue ([string]$Options.key)
+    $lastError = ''
+    $deadline = (Get-Date).AddSeconds(15)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $configPath = Get-RustDeskConfigPath
+            $configOptions = Read-RustDeskConfigOptions -Path $configPath
+            Assert-RustDeskConfigOption -ConfigOptions $configOptions -ConfigPath $configPath -Name 'custom-rendezvous-server' -ExpectedValue ([string]$Options.'custom-rendezvous-server')
+            Assert-RustDeskConfigOption -ConfigOptions $configOptions -ConfigPath $configPath -Name 'relay-server' -ExpectedValue ([string]$Options.'relay-server')
+            Assert-RustDeskConfigOption -ConfigOptions $configOptions -ConfigPath $configPath -Name 'key' -ExpectedValue ([string]$Options.key)
+            Write-Output "Verified Antreva server configuration in RustDesk2.toml: $configPath"
+            return
+        } catch {
+            $lastError = $_.Exception.Message
+        }
+
+        Start-Sleep -Seconds 1
+    }
+
+    throw $lastError
 }
 
 function Set-RustDeskPermanentPassword {
