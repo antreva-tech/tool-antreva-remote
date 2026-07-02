@@ -6,8 +6,8 @@ Antreva-specific code signing and branded build are being prepared.
 The included executable is the official RustDesk `1.4.8` Windows x86_64 binary,
 signed by the upstream RustDesk publisher. The EXE filename carries the
 Antreva RustDesk server settings using RustDesk's supported custom-client
-filename format. The setup script verifies the EXE hash and signature, then
-launches the app.
+filename format. The setup script verifies the EXE hash and signature, installs
+a local launcher named `Antreva Remote`, then launches the app.
 
 ## Contents
 
@@ -33,6 +33,12 @@ Antreva-Remote-Pilot-Setup.cmd
 The RustDesk window should show the custom server warning/settings instead of
 using the public RustDesk server.
 
+The setup creates:
+
+- Desktop shortcut: `Antreva Remote`
+- Start Menu folder: `Antreva > Antreva Remote`
+- Local install folder: `%LOCALAPPDATA%\AntrevaRemotePilot`
+
 Alternative PowerShell command:
 
 ```powershell
@@ -40,8 +46,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\Configure-And-Launch-Antreva-Remote-Pilot.ps1
 ```
 
-This pilot does not install a Windows service. Run it again whenever you need a
-support session.
+This pilot does not install a Windows service. Use the `Antreva Remote`
+shortcut whenever you need a support session.
 
 ## Test Flow
 
@@ -55,7 +61,8 @@ support session.
 
 ## Limitations
 
-- This pilot is RustDesk-branded.
+- The launcher and shortcuts are named Antreva Remote, but the app UI is still
+  RustDesk-branded.
 - It is signed by the upstream RustDesk publisher, not Antreva.
 - The final Antreva Remote build will be separately branded and signed after
   Antreva code signing is ready.
