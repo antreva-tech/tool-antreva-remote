@@ -13,7 +13,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: antreva-remote-installers-${{ github.ref }}
+  group: antreva-desk-installers-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -36,10 +36,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Antreva-Remote-Pilot-RustDesk-1.4.8
+          name: Antreva-Desk-0.1.0-Windows
           path: |
-            artifacts/Antreva-Remote-Pilot-RustDesk-1.4.8.zip
-            artifacts/Antreva-Remote-Pilot-RustDesk-1.4.8.sha256.txt
+            artifacts/Antreva-Desk-0.1.0-Windows.zip
+            artifacts/Antreva-Desk-0.1.0-Windows.sha256.txt
           if-no-files-found: error
           retention-days: 30
 
@@ -58,26 +58,26 @@ jobs:
       - name: Download installer artifact
         uses: actions/download-artifact@v4
         with:
-          name: Antreva-Remote-Pilot-RustDesk-1.4.8
+          name: Antreva-Desk-0.1.0-Windows
           path: release-assets
 
       - name: Write release notes
         shell: bash
         run: |
           {
-            echo "Antreva Remote managed-access pilot installer."
+            echo "Antreva Desk 0.1.0 managed-access installer."
             echo
             echo "Built from commit: \`${GITHUB_SHA}\`"
             echo
-            echo "Download the zip and verify it with the attached SHA256 file."
+            echo "Download Antreva-Desk-0.1.0-Windows.zip and verify it with the attached SHA256 file."
           } > release-notes.md
 
       - name: Publish latest release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: antreva-remote-pilot-latest
-          RELEASE_TITLE: Antreva Remote Pilot Latest
+          TAG_NAME: antreva-desk-0.1.0
+          RELEASE_TITLE: Antreva Desk 0.1.0
         run: |
           set -euo pipefail
 

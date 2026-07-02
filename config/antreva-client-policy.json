@@ -1,5 +1,5 @@
 {
-  "productName": "Antreva Remote",
+  "productName": "Antreva Desk",
   "channel": "mvp-managed-windows",
   "rustdeskOptions": {
     "custom-rendezvous-server": "104.184.67.190",

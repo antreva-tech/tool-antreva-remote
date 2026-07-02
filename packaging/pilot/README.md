@@ -1,6 +1,6 @@
-# Antreva Remote Managed Access Pilot
+# Antreva Desk 0.1.0 Managed Access
 
-This is a temporary pilot bundle for testing Antreva Remote Managed Access while
+This is a temporary pilot bundle for testing Antreva Desk Managed Access while
 the Antreva-specific code signing and branded build are being prepared.
 
 The included executable is the official RustDesk `1.4.8` Windows x86_64 binary,
@@ -36,14 +36,14 @@ The setup will:
 - install the RustDesk service;
 - prompt the technician to enter and confirm the permanent support password;
 - apply Antreva server and managed-access settings;
-- create visible `Antreva Remote` shortcuts;
+- create visible `Antreva Desk` shortcuts;
 - launch the installed app.
 
 The setup creates:
 
-- Desktop shortcut: `Antreva Remote`
-- Start Menu folder: `Antreva > Antreva Remote`
-- Local launcher folder: `%LOCALAPPDATA%\AntrevaRemotePilot`
+- Desktop shortcut: `Antreva Desk`
+- Start Menu folder: `Antreva > Antreva Desk`
+- Local launcher folder: `%LOCALAPPDATA%\AntrevaDesk`
 
 Alternative PowerShell command:
 
@@ -57,7 +57,7 @@ Set-ExecutionPolicy -Scope Process Bypass
 1. Run this bundle on the client computer during authorized onboarding.
 2. Approve the Windows administrator elevation prompt.
 3. Enter and confirm the permanent support password.
-4. Leave Antreva Remote/RustDesk running after setup finishes.
+4. Leave Antreva Desk/RustDesk running after setup finishes.
 5. Record the client RustDesk ID shown in the app.
 6. From the technician computer, connect to that ID using the permanent support
    password.
@@ -66,10 +66,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 ## Limitations
 
-- The launcher and shortcuts are named Antreva Remote, but the app UI is still
+- The launcher and shortcuts are named Antreva Desk, but the app UI is still
   RustDesk-branded.
 - It is signed by the upstream RustDesk publisher, not Antreva.
 - The setup uses a visible Antreva onboarding script, but the underlying
   RustDesk installer command is the upstream installer path.
-- The final Antreva Remote build will be separately branded and signed after
+- The final Antreva Desk build will be separately branded and signed after
   Antreva code signing is ready.

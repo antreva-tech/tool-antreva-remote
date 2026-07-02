@@ -1,6 +1,6 @@
-# Antreva Remote
+# Antreva Desk
 
-Antreva Remote is a managed-access Windows remote support product layer built on
+Antreva Desk is a managed-access Windows remote support product layer built on
 RustDesk OSS. The goal is a branded technician app, an authorized onboarding
 installer, smooth remote desktop control, and bidirectional file transfer for
 managed client systems.
@@ -73,13 +73,13 @@ on pushes to `main`.
 
 - Pull requests upload a 30-day workflow artifact for review/testing.
 - Pushes to `main` publish the zip and SHA-256 file to the GitHub Release named
-  `Antreva Remote Pilot Latest`.
+  `Antreva Desk 0.1.0`.
 
-The release tag is `antreva-remote-pilot-latest`, so the latest managed-access
-pilot installer stays in one stable download location.
+The release tag is `antreva-desk-0.1.0`, and the installer zip is
+`Antreva-Desk-0.1.0-Windows.zip`.
 
 ## License
 
-RustDesk and RustDesk Server are AGPL-3.0 projects. Antreva Remote keeps the
+RustDesk and RustDesk Server are AGPL-3.0 projects. Antreva Desk keeps the
 same license obligations for modified covered work. See
 `docs/compliance/AGPL-SOURCE-OFFER.md` and `docs/compliance/RELEASE-CHECKLIST.md`.

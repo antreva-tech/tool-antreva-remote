@@ -37,4 +37,4 @@ foreach ($property in $options.PSObject.Properties) {
     }
 }
 
-Write-Output "Antreva Remote client policy applied."
+Write-Output "Antreva Desk client policy applied."

@@ -12,7 +12,7 @@ if not exist "%SETUP_SCRIPT%" (
   exit /b 1
 )
 
-echo Starting Antreva Remote Pilot setup...
+echo Starting Antreva Desk 0.1.0 setup...
 echo.
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%SETUP_SCRIPT%"
@@ -27,5 +27,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo Antreva Remote Pilot setup launched.
+echo Antreva Desk 0.1.0 setup launched.
 endlocal

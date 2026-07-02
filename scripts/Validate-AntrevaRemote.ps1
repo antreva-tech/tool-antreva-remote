@@ -26,8 +26,8 @@ function Assert-Equal {
     }
 }
 
-if ($policy.productName -ne 'Antreva Remote') {
-    $errors.Add("productName must be 'Antreva Remote'.")
+if ($policy.productName -ne 'Antreva Desk') {
+    $errors.Add("productName must be 'Antreva Desk'.")
 }
 
 if (-not $AllowPlaceholders -and $options.'custom-rendezvous-server' -eq 'remote.antreva.example') {
@@ -65,4 +65,4 @@ if ($errors.Count -gt 0) {
     exit 1
 }
 
-Write-Output "Antreva Remote policy validation passed."
+Write-Output "Antreva Desk policy validation passed."

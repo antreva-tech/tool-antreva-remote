@@ -20,12 +20,13 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
     $OutputDir = Join-Path $Root 'artifacts'
 }
 
-$Version = '1.4.8'
-$FileName = "rustdesk-$Version-x86_64.exe"
-$DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$Version/$FileName"
+$RustDeskVersion = '1.4.8'
+$AntrevaDeskVersion = '0.1.0'
+$FileName = "rustdesk-$RustDeskVersion-x86_64.exe"
+$DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$RustDeskVersion/$FileName"
 $ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
 $PortableExe = Join-Path $ArtifactsDir $FileName
-$BundleName = "Antreva-Remote-Pilot-RustDesk-$Version"
+$BundleName = "Antreva-Desk-$AntrevaDeskVersion-Windows"
 $BundleDir = Join-Path $OutputDir $BundleName
 $ZipPath = Join-Path $OutputDir "$BundleName.zip"
 $ChecksumPath = Join-Path $OutputDir "$BundleName.sha256.txt"
@@ -43,7 +44,7 @@ New-Item -ItemType Directory -Force -Path $ArtifactsDir | Out-Null
 New-Item -ItemType Directory -Force -Path $OutputDir | Out-Null
 
 if (-not (Test-Path -LiteralPath $PortableExe)) {
-    Write-Output "Downloading RustDesk $Version Windows x86_64..."
+    Write-Output "Downloading RustDesk $RustDeskVersion Windows x86_64..."
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $PortableExe
 }
 

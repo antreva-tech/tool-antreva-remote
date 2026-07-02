@@ -6,9 +6,9 @@ $ErrorActionPreference = 'Stop'
 $ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
 $PilotExeName = 'rustdesk-host=104.184.67.190,key=YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=,relay=104.184.67.190.exe'
 $PortableExe = Join-Path $PSScriptRoot $PilotExeName
-$InstallDir = Join-Path $env:LOCALAPPDATA 'AntrevaRemotePilot'
-$Launcher = Join-Path $InstallDir 'Launch Antreva Remote.cmd'
-$ShortcutName = 'Antreva Remote'
+$InstallDir = Join-Path $env:LOCALAPPDATA 'AntrevaDesk'
+$Launcher = Join-Path $InstallDir 'Launch Antreva Desk.cmd'
+$ShortcutName = 'Antreva Desk'
 
 $ManagedOptions = [ordered]@{
     'custom-rendezvous-server' = '104.184.67.190'
@@ -189,7 +189,7 @@ if ($signature.Status -ne 'Valid') {
     throw "Pilot executable signature is not valid: $($signature.StatusMessage)"
 }
 
-Write-Output "Antreva Remote Managed Access setup"
+Write-Output "Antreva Desk 0.1.0 Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."
 $password1 = Read-Host -AsSecureString 'Enter the permanent support password'
 $password2 = Read-Host -AsSecureString 'Confirm the permanent support password'
@@ -208,7 +208,7 @@ try {
     Get-Process -Name 'rustdesk' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
     Start-Sleep -Seconds 1
 
-    Write-Output "Installing Antreva Remote managed access service..."
+    Write-Output "Installing Antreva Desk managed access service..."
     $installedExe = Invoke-RustDeskManagedInstall -InstallerExe $PortableExe
 
     foreach ($property in $ManagedOptions.GetEnumerator()) {
@@ -236,11 +236,11 @@ start "" "$installedExe"
         $shortcut.TargetPath = $Launcher
         $shortcut.WorkingDirectory = Split-Path -Parent $installedExe
         $shortcut.IconLocation = "$installedExe,0"
-        $shortcut.Description = 'Antreva Remote managed support client'
+        $shortcut.Description = 'Antreva Desk managed support client'
         $shortcut.Save()
     }
 
-    Write-Output "Launching Antreva Remote managed access..."
+    Write-Output "Launching Antreva Desk managed access..."
     Write-Output "ID server: 104.184.67.190"
     Write-Output "Relay server: 104.184.67.190"
     Start-Process -FilePath $installedExe
