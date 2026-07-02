@@ -11,6 +11,7 @@ the app.
 ## Contents
 
 - `rustdesk-1.4.8-x86_64.exe`
+- `Antreva-Remote-Pilot-Setup.cmd`
 - `Configure-And-Launch-Antreva-Remote-Pilot.ps1`
 - `README.md`
 
@@ -22,7 +23,15 @@ the app.
 
 ## How to Run
 
-Right-click PowerShell and choose **Run as Administrator**, then run:
+Double-click:
+
+```text
+Antreva-Remote-Pilot-Setup.cmd
+```
+
+Approve the Windows Administrator prompt if it appears.
+
+Alternative PowerShell command:
 
 ```powershell
 Set-ExecutionPolicy -Scope Process Bypass
