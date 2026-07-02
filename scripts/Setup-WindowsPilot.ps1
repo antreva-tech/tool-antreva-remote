@@ -130,9 +130,11 @@ try {
     Start-Sleep -Seconds 1
 
     Write-Output "Installing RustDesk managed service..."
-    & $PortableExe --silent-install
-    if ($LASTEXITCODE -ne 0) {
-        throw "RustDesk installation failed with exit code $LASTEXITCODE."
+    $installOutput = & $PortableExe --silent-install 2>&1
+    $installExitCode = $LASTEXITCODE
+    if ($null -ne $installExitCode -and $installExitCode -ne 0) {
+        $installText = ($installOutput | Out-String).Trim()
+        throw "RustDesk installation failed with exit code $installExitCode. $installText"
     }
 
     $installedExe = $null
@@ -142,7 +144,11 @@ try {
     }
 
     if ([string]::IsNullOrWhiteSpace($installedExe)) {
-        throw 'Installed RustDesk executable was not found under Program Files.'
+        $installText = ($installOutput | Out-String).Trim()
+        if ([string]::IsNullOrWhiteSpace($installText)) {
+            $installText = 'No installer output was captured.'
+        }
+        throw "Installed RustDesk executable was not found under Program Files. Installer exit code: $installExitCode. $installText"
     }
 
     Write-Output "Applying Antreva Remote managed policy to $installedExe..."
