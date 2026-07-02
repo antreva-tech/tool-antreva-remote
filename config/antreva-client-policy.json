@@ -2,9 +2,9 @@
   "productName": "Antreva Remote",
   "channel": "mvp-attended-windows",
   "rustdeskOptions": {
-    "custom-rendezvous-server": "remote.antreva.example",
-    "relay-server": "remote.antreva.example",
-    "key": "REPLACE_WITH_OFFICE_RUSTDESK_PUBLIC_KEY",
+    "custom-rendezvous-server": "104.184.67.190",
+    "relay-server": "104.184.67.190",
+    "key": "YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=",
     "access-mode": "click",
     "approve-mode": "click",
     "verification-method": "use-temporary-password",
