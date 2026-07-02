@@ -75,6 +75,9 @@ foreach ($script in @($packagedSetup, $applyPolicy)) {
     Assert-Contains -Name 'custom server config path helper' -Text $script -Expected 'Get-RustDeskConfigPath'
     Assert-Contains -Name 'custom server config parser' -Text $script -Expected 'Read-RustDeskConfigOptions'
     Assert-Contains -Name 'custom server config assertion helper' -Text $script -Expected 'Assert-RustDeskConfigOption'
+    Assert-Contains -Name 'custom server relay fallback helper' -Text $script -Expected 'Assert-RustDeskRelayOption'
+    Assert-Contains -Name 'custom server blank relay same-host fallback' -Text $script -Expected 'Test-RustDeskBlankRelayUsesCustomServerFallback'
+    Assert-Contains -Name 'custom server relay fallback message' -Text $script -Expected 'relay-server is using the custom rendezvous server fallback'
     Assert-Contains -Name 'custom server persisted config file' -Text $script -Expected 'RustDesk2.toml'
     Assert-Contains -Name 'custom server options section parser' -Text $script -Expected "-eq 'options'"
     Assert-Contains -Name 'custom rendezvous persisted config verification' -Text $script -Expected 'custom-rendezvous-server'
@@ -82,6 +85,7 @@ foreach ($script in @($packagedSetup, $applyPolicy)) {
     Assert-Contains -Name 'key persisted config verification' -Text $script -Expected 'Assert-RustDeskConfigOption'
     Assert-Contains -Name 'custom server-only persisted config verification' -Text $script -Expected 'Assert-RustDeskServerOptions'
     Assert-NotContains -Name 'custom server verification via CLI readback' -Text $script -Unexpected 'Get-RustDeskOption -RustDeskExe $RustDeskExe -Name $Name'
+    Assert-NotContains -Name 'custom server strict relay TOML requirement' -Text $script -Unexpected "Assert-RustDeskConfigOption -ConfigOptions `$configOptions -ConfigPath `$configPath -Name 'relay-server'"
 }
 
 Assert-NotContains -Name 'packaged all-option verification' -Text $packagedSetup -Unexpected 'Assert-RustDeskManagedOptions'

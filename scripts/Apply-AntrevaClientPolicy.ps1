@@ -99,6 +99,71 @@ function Assert-RustDeskConfigOption {
     }
 }
 
+function Get-RustDeskEndpointHost {
+    param([string]$Endpoint)
+
+    $value = ([string]$Endpoint).Trim()
+    if ([string]::IsNullOrWhiteSpace($value)) {
+        return ''
+    }
+    if ($value.StartsWith('[')) {
+        $endBracket = $value.IndexOf(']')
+        if ($endBracket -gt 0) {
+            return $value.Substring(1, $endBracket - 1)
+        }
+    }
+
+    $firstColon = $value.IndexOf(':')
+    $lastColon = $value.LastIndexOf(':')
+    if ($firstColon -gt -1 -and $firstColon -eq $lastColon) {
+        return $value.Substring(0, $firstColon)
+    }
+
+    return $value
+}
+
+function Test-RustDeskBlankRelayUsesCustomServerFallback {
+    param(
+        [Parameter(Mandatory = $true)][string]$ExpectedRelay,
+        [Parameter(Mandatory = $true)][string]$ExpectedRendezvous
+    )
+
+    $relayHost = Get-RustDeskEndpointHost -Endpoint $ExpectedRelay
+    $rendezvousHost = Get-RustDeskEndpointHost -Endpoint $ExpectedRendezvous
+    if ([string]::IsNullOrWhiteSpace($relayHost) -or [string]::IsNullOrWhiteSpace($rendezvousHost)) {
+        return $false
+    }
+
+    return [string]::Equals($relayHost, $rendezvousHost, [StringComparison]::OrdinalIgnoreCase)
+}
+
+function Assert-RustDeskRelayOption {
+    param(
+        [Parameter(Mandatory = $true)][hashtable]$ConfigOptions,
+        [Parameter(Mandatory = $true)][string]$ConfigPath,
+        [Parameter(Mandatory = $true)]$Options
+    )
+
+    $name = 'relay-server'
+    $actual = ''
+    if ($ConfigOptions.ContainsKey($name)) {
+        $actual = [string]$ConfigOptions[$name]
+    }
+
+    $expectedRelay = [string]$Options.'relay-server'
+    if ($actual -eq $expectedRelay) {
+        return
+    }
+
+    $expectedRendezvous = [string]$Options.'custom-rendezvous-server'
+    if ([string]::IsNullOrWhiteSpace($actual) -and (Test-RustDeskBlankRelayUsesCustomServerFallback -ExpectedRelay $expectedRelay -ExpectedRendezvous $expectedRendezvous)) {
+        Write-Output "RustDesk relay-server is using the custom rendezvous server fallback in RustDesk2.toml: $ConfigPath"
+        return
+    }
+
+    throw "RustDesk option '$name' did not verify in RustDesk2.toml at $ConfigPath. Expected '$expectedRelay' but got '$actual'."
+}
+
 function Assert-RustDeskServerOptions {
     param(
         [Parameter(Mandatory = $true)][string]$RustDeskExe,
@@ -112,7 +177,7 @@ function Assert-RustDeskServerOptions {
             $configPath = Get-RustDeskConfigPath
             $configOptions = Read-RustDeskConfigOptions -Path $configPath
             Assert-RustDeskConfigOption -ConfigOptions $configOptions -ConfigPath $configPath -Name 'custom-rendezvous-server' -ExpectedValue ([string]$Options.'custom-rendezvous-server')
-            Assert-RustDeskConfigOption -ConfigOptions $configOptions -ConfigPath $configPath -Name 'relay-server' -ExpectedValue ([string]$Options.'relay-server')
+            Assert-RustDeskRelayOption -ConfigOptions $configOptions -ConfigPath $configPath -Options $Options
             Assert-RustDeskConfigOption -ConfigOptions $configOptions -ConfigPath $configPath -Name 'key' -ExpectedValue ([string]$Options.key)
             Write-Output "Verified Antreva server configuration in RustDesk2.toml: $configPath"
             return
