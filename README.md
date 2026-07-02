@@ -1,12 +1,12 @@
 # Antreva Remote
 
-Antreva Remote is an attended-only Windows remote support product layer built on
-RustDesk OSS. The goal is a branded technician app, a portable QuickSupport
-client, smooth remote desktop control, and bidirectional file transfer after the
-client approves the support session.
+Antreva Remote is a managed-access Windows remote support product layer built on
+RustDesk OSS. The goal is a branded technician app, an authorized onboarding
+installer, smooth remote desktop control, and bidirectional file transfer for
+managed client systems.
 
-This repository intentionally does not implement stealth access, hidden
-persistence, or unattended access for v1.
+This repository intentionally does not implement stealth access, hidden tray
+behavior, disguised processes, or silent enrollment.
 
 ## Repository Layout
 
@@ -15,7 +15,7 @@ persistence, or unattended access for v1.
 - `infra/office-server`: Docker Compose deployment for the office-hosted
   `hbbs` ID/rendezvous server and `hbbr` relay server.
 - `config/antreva-client-policy.json`: Antreva defaults using RustDesk option
-  keys for attended support and session-approved file transfer.
+  keys for managed support and bidirectional file transfer.
 - `docs`: operations, security, and AGPL compliance material.
 - `scripts`: validation and Windows release helpers.
 
@@ -42,13 +42,15 @@ deployment persists server keys under `infra/office-server/data`.
 
 ## Security Model
 
-V1 is consent based:
+V1 is managed access:
 
-- The client must launch the visible QuickSupport app.
-- The client must approve each remote support session.
-- File transfer is enabled only inside an approved active session.
-- No unattended access, stealth startup, hidden tray behavior, or permanent
-  password flow is part of the v1 release.
+- A technician must perform visible onboarding with Windows administrator
+  approval.
+- The technician sets the permanent support password during onboarding.
+- The app or tray must remain visible after installation.
+- File transfer is enabled for support sessions.
+- No stealth startup, hidden tray behavior, disguised process, or silent
+  enrollment is part of the v1 release.
 
 ## Build Notes
 

@@ -22,12 +22,57 @@ $FileName = "rustdesk-$Version-x86_64.exe"
 $DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$Version/$FileName"
 $ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
 $PortableExe = Join-Path $ArtifactsDir $FileName
-$ExtractedExe = Join-Path $env:LOCALAPPDATA 'rustdesk\rustdesk.exe'
 
 function Test-IsAdministrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = [Security.Principal.WindowsPrincipal]::new($identity)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+}
+
+function ConvertFrom-SecureStringForProcess {
+    param([Parameter(Mandatory = $true)][Security.SecureString]$SecureString)
+
+    $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($SecureString)
+    try {
+        return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr)
+    } finally {
+        if ($bstr -ne [IntPtr]::Zero) {
+            [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
+        }
+    }
+}
+
+function Get-InstalledRustDeskExe {
+    $candidates = @(
+        (Join-Path $env:ProgramFiles 'RustDesk\RustDesk.exe'),
+        (Join-Path $env:ProgramFiles 'RustDesk\rustdesk.exe')
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace(${env:ProgramFiles(x86)})) {
+        $candidates += (Join-Path ${env:ProgramFiles(x86)} 'RustDesk\RustDesk.exe')
+        $candidates += (Join-Path ${env:ProgramFiles(x86)} 'RustDesk\rustdesk.exe')
+    }
+
+    foreach ($candidate in $candidates) {
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
+function Set-RustDeskPermanentPassword {
+    param(
+        [Parameter(Mandatory = $true)][string]$RustDeskExe,
+        [Parameter(Mandatory = $true)][string]$Password
+    )
+
+    $output = & $RustDeskExe --password $Password 2>&1
+    $text = ($output | Out-String).Trim()
+    if ($LASTEXITCODE -ne 0 -or $text -notmatch 'Done!') {
+        throw "RustDesk did not accept the permanent password. Output: $text"
+    }
 }
 
 & (Join-Path $ScriptDir 'Validate-AntrevaRemote.ps1') -PolicyPath $PolicyPath
@@ -50,7 +95,7 @@ if ($signature.Status -ne 'Valid') {
 }
 
 if (-not (Test-IsAdministrator)) {
-    Write-Output "Configuration requires elevation. Relaunching this script as Administrator..."
+    Write-Output "Managed Access setup requires elevation. Relaunching this script as Administrator..."
     $args = @(
         '-NoProfile',
         '-ExecutionPolicy', 'Bypass',
@@ -65,21 +110,58 @@ if (-not (Test-IsAdministrator)) {
     exit 0
 }
 
-if (-not (Test-Path -LiteralPath $ExtractedExe)) {
-    Write-Output "Extracting RustDesk runtime..."
-    & $PortableExe --version | Out-Null
-}
+Write-Output "Antreva Remote Managed Access setup"
+Write-Output "This will install the support service and configure permanent-password access."
+$password1 = Read-Host -AsSecureString 'Enter the permanent support password'
+$password2 = Read-Host -AsSecureString 'Confirm the permanent support password'
+$plainPassword1 = ConvertFrom-SecureStringForProcess -SecureString $password1
+$plainPassword2 = ConvertFrom-SecureStringForProcess -SecureString $password2
 
-if (-not (Test-Path -LiteralPath $ExtractedExe)) {
-    throw "RustDesk runtime was not found at $ExtractedExe after extraction."
-}
+try {
+    if ([string]::IsNullOrWhiteSpace($plainPassword1)) {
+        throw 'Permanent support password cannot be empty.'
+    }
+    if ($plainPassword1 -ne $plainPassword2) {
+        throw 'Permanent support passwords did not match.'
+    }
 
-Write-Output "Applying Antreva Remote policy to $ExtractedExe..."
-& (Join-Path $ScriptDir 'Apply-AntrevaClientPolicy.ps1') -RustDeskExe $ExtractedExe -PolicyPath $PolicyPath
+    Write-Output "Stopping existing RustDesk processes..."
+    Get-Process -Name 'rustdesk' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 1
 
-Write-Output "Pilot app is configured for Antreva Remote."
-Write-Output "Executable: $ExtractedExe"
+    Write-Output "Installing RustDesk managed service..."
+    & $PortableExe --silent-install
+    if ($LASTEXITCODE -ne 0) {
+        throw "RustDesk installation failed with exit code $LASTEXITCODE."
+    }
 
-if ($LaunchAfterConfigure) {
-    Start-Process -FilePath $ExtractedExe
+    $installedExe = $null
+    for ($i = 0; $i -lt 30 -and [string]::IsNullOrWhiteSpace($installedExe); $i++) {
+        Start-Sleep -Seconds 1
+        $installedExe = Get-InstalledRustDeskExe
+    }
+
+    if ([string]::IsNullOrWhiteSpace($installedExe)) {
+        throw 'Installed RustDesk executable was not found under Program Files.'
+    }
+
+    Write-Output "Applying Antreva Remote managed policy to $installedExe..."
+    & (Join-Path $ScriptDir 'Apply-AntrevaClientPolicy.ps1') -RustDeskExe $installedExe -PolicyPath $PolicyPath
+
+    Write-Output "Setting permanent support password..."
+    Set-RustDeskPermanentPassword -RustDeskExe $installedExe -Password $plainPassword1
+
+    Write-Output "Managed Access is configured for Antreva Remote."
+    Write-Output "Executable: $installedExe"
+
+    if ($LaunchAfterConfigure) {
+        Start-Process -FilePath $installedExe
+    }
+} finally {
+    if ($null -ne $plainPassword1) {
+        $plainPassword1 = $null
+    }
+    if ($null -ne $plainPassword2) {
+        $plainPassword2 = $null
+    }
 }

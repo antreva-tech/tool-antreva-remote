@@ -165,7 +165,8 @@ That folder contains the server identity and must be backed up.
 
 ## Do Not Do
 
-- Do not enable unattended access.
+- Do not change managed-access behavior from the approved visible onboarding
+  flow.
 - Do not expose private key files.
 - Do not commit `.env`.
 - Do not commit `infra/office-server/data/`.

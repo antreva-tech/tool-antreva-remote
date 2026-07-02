@@ -1,13 +1,13 @@
 {
   "productName": "Antreva Remote",
-  "channel": "mvp-attended-windows",
+  "channel": "mvp-managed-windows",
   "rustdeskOptions": {
     "custom-rendezvous-server": "104.184.67.190",
     "relay-server": "104.184.67.190",
     "key": "YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=",
-    "access-mode": "click",
-    "approve-mode": "click",
-    "verification-method": "use-temporary-password",
+    "access-mode": "password",
+    "approve-mode": "password",
+    "verification-method": "use-permanent-password",
     "enable-keyboard": "Y",
     "enable-clipboard": "Y",
     "enable-file-transfer": "Y",
@@ -27,15 +27,16 @@
     "hide-server-settings": "Y",
     "hide-proxy-settings": "Y",
     "hide-security-settings": "N",
-    "hide-stop-service": "Y",
-    "disable-change-permanent-password": "Y",
+    "hide-stop-service": "N",
+    "disable-change-permanent-password": "N",
     "disable-change-id": "Y",
     "disable-unlock-pin": "Y"
   },
   "releaseGates": {
     "requiresCodeSigning": true,
     "requiresSourceOffer": true,
-    "requiresVisibleClientConsent": true,
-    "allowsUnattendedAccess": false
+    "requiresVisibleClientConsent": false,
+    "requiresVisibleOnboardingConsent": true,
+    "allowsUnattendedAccess": true
   }
 }
