@@ -351,6 +351,95 @@ function Assert-RustDeskServerOptions {
     throw $lastError
 }
 
+function Get-RustDeskMainConfigPath {
+    $candidateRoots = @(
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::ApplicationData),
+        $env:APPDATA,
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData),
+        $env:ProgramData,
+        [Environment]::GetFolderPath([Environment+SpecialFolder]::LocalApplicationData),
+        $env:LOCALAPPDATA
+    )
+    $candidates = @()
+    foreach ($root in $candidateRoots) {
+        if (-not [string]::IsNullOrWhiteSpace($root)) {
+            $candidates += (Join-Path $root 'RustDesk\config\RustDesk.toml')
+        }
+    }
+
+    $seen = @{}
+    foreach ($candidate in $candidates) {
+        if ($seen.ContainsKey($candidate)) {
+            continue
+        }
+        $seen[$candidate] = $true
+        if (Test-Path -LiteralPath $candidate) {
+            return $candidate
+        }
+    }
+
+    throw "RustDesk.toml was not found. Checked: $($seen.Keys -join '; ')"
+}
+
+function Read-RustDeskMainConfig {
+    param([Parameter(Mandatory = $true)][string]$Path)
+
+    $config = @{}
+    foreach ($line in Get-Content -LiteralPath $Path) {
+        $trimmed = $line.Trim()
+        if ($trimmed -match '^\[') {
+            break
+        }
+        if ([string]::IsNullOrWhiteSpace($trimmed) -or $trimmed.StartsWith('#')) {
+            continue
+        }
+        if ($trimmed -match '^\s*([^=\s]+)\s*=\s*(.*?)\s*$') {
+            $name = $matches[1]
+            $value = $matches[2].Trim()
+            if ($value.Length -ge 2) {
+                if (($value.StartsWith("'") -and $value.EndsWith("'")) -or ($value.StartsWith('"') -and $value.EndsWith('"'))) {
+                    $value = $value.Substring(1, $value.Length - 2)
+                }
+            }
+            $config[$name] = $value
+        }
+    }
+
+    return $config
+}
+
+function Assert-RustDeskPermanentPasswordState {
+    $lastError = ''
+    $deadline = (Get-Date).AddSeconds(15)
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $configPath = Get-RustDeskMainConfigPath
+            $config = Read-RustDeskMainConfig -Path $configPath
+            $passwordStorage = if ($config.ContainsKey('password')) { [string]$config.password } else { '' }
+            $salt = if ($config.ContainsKey('salt')) { [string]$config.salt } else { '' }
+
+            if ([string]::IsNullOrWhiteSpace($passwordStorage)) {
+                throw "RustDesk permanent password storage is empty in RustDesk.toml at $configPath."
+            }
+            if ([string]::IsNullOrWhiteSpace($salt)) {
+                throw "RustDesk permanent password salt is empty in RustDesk.toml at $configPath."
+            }
+            if (-not $passwordStorage.StartsWith('01')) {
+                throw "RustDesk permanent password storage is not in the expected current format in RustDesk.toml at $configPath."
+            }
+
+            Write-Output "Verified RustDesk permanent password storage in RustDesk.toml: $configPath"
+            return
+        } catch {
+            $lastError = $_.Exception.Message
+        }
+
+        Start-Sleep -Seconds 1
+    }
+
+    throw $lastError
+}
+
 function Set-RustDeskPermanentPassword {
     param(
         [Parameter(Mandatory = $true)][string]$RustDeskExe,
@@ -359,9 +448,13 @@ function Set-RustDeskPermanentPassword {
 
     $output = & $RustDeskExe --password $Password 2>&1
     $text = ($output | Out-String).Trim()
-    if (($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) -or $text -notmatch 'Done!') {
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "RustDesk did not accept the permanent password. Output: $text"
     }
+    if ($text -match 'Installation and administrative privileges required|Settings are disabled|Changing permanent password is disabled|rejected|failed|error') {
+        throw "RustDesk did not accept the permanent password. Output: $text"
+    }
+    Assert-RustDeskPermanentPasswordState
 }
 
 function Invoke-RustDeskManagedInstall {

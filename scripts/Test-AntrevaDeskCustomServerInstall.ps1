@@ -59,6 +59,14 @@ foreach ($script in @($packagedSetup, $repoSetup, $applyPolicy)) {
     Assert-Contains -Name 'RustDesk GUI CLI nullable exit code handling' -Text $script -Expected '$null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0'
 }
 
+foreach ($script in @($packagedSetup, $repoSetup)) {
+    Assert-Contains -Name 'permanent password config path helper' -Text $script -Expected 'Get-RustDeskMainConfigPath'
+    Assert-Contains -Name 'permanent password config parser' -Text $script -Expected 'Read-RustDeskMainConfig'
+    Assert-Contains -Name 'permanent password persisted state assertion' -Text $script -Expected 'Assert-RustDeskPermanentPasswordState'
+    Assert-Contains -Name 'permanent password persisted config file' -Text $script -Expected 'RustDesk.toml'
+    Assert-NotContains -Name 'permanent password stdout Done requirement' -Text $script -Unexpected "text -notmatch 'Done!'"
+}
+
 foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', 'Split-Path -Leaf $PortableExe')) {
     Assert-Contains -Name 'packaged custom server import' -Text $packagedSetup -Expected $expected
 }
