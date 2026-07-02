@@ -1,0 +1,96 @@
+name: Build and Release Installers
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: antreva-remote-installers-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build installer artifact
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate repository
+        shell: pwsh
+        run: ./scripts/Test-Repository.ps1
+
+      - name: Build pilot installer bundle
+        shell: pwsh
+        run: ./scripts/Build-PilotBundle.ps1
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Antreva-Remote-Pilot-RustDesk-1.4.8
+          path: |
+            artifacts/Antreva-Remote-Pilot-RustDesk-1.4.8.zip
+            artifacts/Antreva-Remote-Pilot-RustDesk-1.4.8.sha256.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: Publish latest installer release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: Antreva-Remote-Pilot-RustDesk-1.4.8
+          path: release-assets
+
+      - name: Write release notes
+        shell: bash
+        run: |
+          {
+            echo "Antreva Remote managed-access pilot installer."
+            echo
+            echo "Built from commit: \`${GITHUB_SHA}\`"
+            echo
+            echo "Download the zip and verify it with the attached SHA256 file."
+          } > release-notes.md
+
+      - name: Publish latest release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_NAME: antreva-remote-pilot-latest
+          RELEASE_TITLE: Antreva Remote Pilot Latest
+        run: |
+          set -euo pipefail
+
+          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
+            gh release delete "$TAG_NAME" --yes --cleanup-tag
+          fi
+
+          git tag -f "$TAG_NAME" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$TAG_NAME"
+
+          gh release create "$TAG_NAME" \
+            release-assets/* \
+            --title "$RELEASE_TITLE" \
+            --notes-file release-notes.md \
+            --prerelease \
+            --latest
