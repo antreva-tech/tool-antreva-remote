@@ -43,6 +43,10 @@ foreach ($script in @($packagedSetup, $repoSetup)) {
     Assert-Contains -Name 'elevated failure exit code' -Text $script -Expected 'Antreva Desk setup failed with exit code'
 }
 
+foreach ($script in @($packagedSetup, $repoSetup, $applyPolicy)) {
+    Assert-Contains -Name 'RustDesk GUI CLI nullable exit code handling' -Text $script -Expected '$null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0'
+}
+
 foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', 'Split-Path -Leaf $PortableExe')) {
     Assert-Contains -Name 'packaged custom server import' -Text $packagedSetup -Expected $expected
 }

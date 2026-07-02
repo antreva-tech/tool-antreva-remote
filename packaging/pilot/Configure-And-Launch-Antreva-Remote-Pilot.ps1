@@ -223,7 +223,7 @@ function Invoke-RustDeskOption {
 
     Write-Output "Applying RustDesk option: $Name"
     $output = & $RustDeskExe --option $Name $Value 2>&1
-    if ($LASTEXITCODE -ne 0) {
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "Failed to apply RustDesk option '$Name' with exit code $LASTEXITCODE. $output"
     }
     if (($output | Out-String) -match 'Installation and administrative privileges required|Settings are disabled') {
@@ -239,7 +239,7 @@ function Get-RustDeskOption {
 
     $output = & $RustDeskExe --option $Name 2>&1
     $text = ($output | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) {
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "Failed to read RustDesk option '$Name' with exit code $LASTEXITCODE. $text"
     }
     if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
@@ -279,7 +279,7 @@ function Import-RustDeskCustomServerConfig {
     Write-Output "Importing Antreva server configuration from installer name..."
     $output = & $RustDeskExe --config $ConfigName 2>&1
     $text = ($output | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0) {
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "Failed to import Antreva server configuration with exit code $LASTEXITCODE. $text"
     }
     if ($text -match 'Installation and administrative privileges required|Settings are disabled') {
@@ -306,7 +306,7 @@ function Set-RustDeskPermanentPassword {
 
     $output = & $RustDeskExe --password $Password 2>&1
     $text = ($output | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $text -notmatch 'Done!') {
+    if (($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) -or $text -notmatch 'Done!') {
         throw "RustDesk did not accept the permanent password. Output: $text"
     }
 }

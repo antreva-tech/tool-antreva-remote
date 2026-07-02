@@ -211,7 +211,7 @@ function Set-RustDeskPermanentPassword {
 
     $output = & $RustDeskExe --password $Password 2>&1
     $text = ($output | Out-String).Trim()
-    if ($LASTEXITCODE -ne 0 -or $text -notmatch 'Done!') {
+    if (($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) -or $text -notmatch 'Done!') {
         throw "RustDesk did not accept the permanent password. Output: $text"
     }
 }
