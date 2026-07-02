@@ -4,13 +4,14 @@ This is a temporary pilot bundle for testing Antreva Remote while the
 Antreva-specific code signing and branded build are being prepared.
 
 The included executable is the official RustDesk `1.4.8` Windows x86_64 binary,
-signed by the upstream RustDesk publisher. The setup script verifies the EXE
-hash and signature, configures it for the Antreva RustDesk server, then launches
-the app.
+signed by the upstream RustDesk publisher. The EXE filename carries the
+Antreva RustDesk server settings using RustDesk's supported custom-client
+filename format. The setup script verifies the EXE hash and signature, then
+launches the app.
 
 ## Contents
 
-- `rustdesk-1.4.8-x86_64.exe`
+- `rustdesk-host=104.184.67.190,key=YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=,relay=104.184.67.190.exe`
 - `Antreva-Remote-Pilot-Setup.cmd`
 - `Configure-And-Launch-Antreva-Remote-Pilot.ps1`
 - `README.md`
@@ -29,7 +30,8 @@ Double-click:
 Antreva-Remote-Pilot-Setup.cmd
 ```
 
-Approve the Windows Administrator prompt if it appears.
+The RustDesk window should show the custom server warning/settings instead of
+using the public RustDesk server.
 
 Alternative PowerShell command:
 
@@ -38,8 +40,8 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\Configure-And-Launch-Antreva-Remote-Pilot.ps1
 ```
 
-If you run the script without Administrator permission, it will ask Windows to
-relaunch itself elevated.
+This pilot does not install a Windows service. Run it again whenever you need a
+support session.
 
 ## Test Flow
 
