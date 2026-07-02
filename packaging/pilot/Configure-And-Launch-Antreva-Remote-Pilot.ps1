@@ -111,6 +111,59 @@ function Set-RustDeskPermanentPassword {
     }
 }
 
+function Invoke-RustDeskManagedInstall {
+    param([Parameter(Mandatory = $true)][string]$InstallerExe)
+
+    $stdoutPath = Join-Path $env:TEMP "antreva-rustdesk-install-$PID.out.log"
+    $stderrPath = Join-Path $env:TEMP "antreva-rustdesk-install-$PID.err.log"
+    Remove-Item -LiteralPath $stdoutPath, $stderrPath -Force -ErrorAction SilentlyContinue
+
+    $process = Start-Process `
+        -FilePath $InstallerExe `
+        -ArgumentList '--silent-install' `
+        -PassThru `
+        -WindowStyle Hidden `
+        -RedirectStandardOutput $stdoutPath `
+        -RedirectStandardError $stderrPath
+
+    $deadline = (Get-Date).AddSeconds(120)
+    $postExitDeadline = $null
+
+    while ((Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 2
+
+        $installedExe = Get-InstalledRustDeskExe
+        if (-not [string]::IsNullOrWhiteSpace($installedExe)) {
+            if (-not $process.HasExited) {
+                Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+            }
+            return $installedExe
+        }
+
+        if ($process.HasExited -and $null -eq $postExitDeadline) {
+            $postExitDeadline = (Get-Date).AddSeconds(10)
+        }
+
+        if ($null -ne $postExitDeadline -and (Get-Date) -ge $postExitDeadline) {
+            break
+        }
+    }
+
+    if (-not $process.HasExited) {
+        Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+    }
+
+    $exitCode = if ($process.HasExited) { $process.ExitCode } else { 'timeout' }
+    $stdout = if (Test-Path -LiteralPath $stdoutPath) { Get-Content -LiteralPath $stdoutPath -Raw } else { '' }
+    $stderr = if (Test-Path -LiteralPath $stderrPath) { Get-Content -LiteralPath $stderrPath -Raw } else { '' }
+    $installText = (($stdout, $stderr) -join "`n").Trim()
+    if ([string]::IsNullOrWhiteSpace($installText)) {
+        $installText = 'No installer output was captured.'
+    }
+
+    throw "RustDesk installation did not complete. Installer result: $exitCode. $installText"
+}
+
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires administrator permission. Relaunching as Administrator..."
     $args = @(
@@ -156,26 +209,7 @@ try {
     Start-Sleep -Seconds 1
 
     Write-Output "Installing Antreva Remote managed access service..."
-    $installOutput = & $PortableExe --silent-install 2>&1
-    $installExitCode = $LASTEXITCODE
-    if ($null -ne $installExitCode -and $installExitCode -ne 0) {
-        $installText = ($installOutput | Out-String).Trim()
-        throw "RustDesk installation failed with exit code $installExitCode. $installText"
-    }
-
-    $installedExe = $null
-    for ($i = 0; $i -lt 30 -and [string]::IsNullOrWhiteSpace($installedExe); $i++) {
-        Start-Sleep -Seconds 1
-        $installedExe = Get-InstalledRustDeskExe
-    }
-
-    if ([string]::IsNullOrWhiteSpace($installedExe)) {
-        $installText = ($installOutput | Out-String).Trim()
-        if ([string]::IsNullOrWhiteSpace($installText)) {
-            $installText = 'No installer output was captured.'
-        }
-        throw "Installed RustDesk executable was not found under Program Files. Installer exit code: $installExitCode. $installText"
-    }
+    $installedExe = Invoke-RustDeskManagedInstall -InstallerExe $PortableExe
 
     foreach ($property in $ManagedOptions.GetEnumerator()) {
         Invoke-RustDeskOption -RustDeskExe $installedExe -Name $property.Key -Value $property.Value
