@@ -66,6 +66,18 @@ For the fastest two-machine pilot using the official signed RustDesk binary,
 run `scripts/Setup-WindowsPilot.ps1` and follow
 `docs/operations/PILOT-WINDOWS-TEST.md`.
 
+## Installer Downloads
+
+GitHub Actions builds the pilot installer bundle on pull requests to `main` and
+on pushes to `main`.
+
+- Pull requests upload a 30-day workflow artifact for review/testing.
+- Pushes to `main` publish the zip and SHA-256 file to the GitHub Release named
+  `Antreva Remote Pilot Latest`.
+
+The release tag is `antreva-remote-pilot-latest`, so the latest managed-access
+pilot installer stays in one stable download location.
+
 ## License
 
 RustDesk and RustDesk Server are AGPL-3.0 projects. Antreva Remote keeps the
