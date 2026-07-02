@@ -92,5 +92,4 @@ jobs:
             release-assets/* \
             --title "$RELEASE_TITLE" \
             --notes-file release-notes.md \
-            --prerelease \
             --latest
