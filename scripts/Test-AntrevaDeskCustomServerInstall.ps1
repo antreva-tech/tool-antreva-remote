@@ -37,6 +37,10 @@ $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'
 foreach ($script in @($packagedSetup, $repoSetup)) {
     Assert-Contains -Name 'installer finalization wait' -Text $script -Expected '$installCompletionDeadline'
     Assert-Contains -Name 'installer finalization message' -Text $script -Expected 'Waiting for RustDesk installer finalization'
+    Assert-Contains -Name 'elevated setup wrapper' -Text $script -Expected 'Start-ElevatedSetup'
+    Assert-Contains -Name 'setup transcript log' -Text $script -Expected 'AntrevaDesk-Setup.log'
+    Assert-Contains -Name 'elevated failure pause' -Text $script -Expected 'Press any key to close this window'
+    Assert-Contains -Name 'elevated failure exit code' -Text $script -Expected 'Antreva Desk setup failed with exit code'
 }
 
 foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', 'Split-Path -Leaf $PortableExe')) {

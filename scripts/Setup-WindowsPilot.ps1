@@ -28,6 +28,7 @@ $DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$Version/
 $ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
 $PortableExe = Join-Path $ArtifactsDir $FileName
 $SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x64'
+$SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
 
 function Test-IsAdministrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -136,6 +137,50 @@ function Assert-AntrevaDeskWindowsSupport {
     }
 
     return $windowsSupport
+}
+
+function ConvertTo-CmdArgument {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    if ($Value -match '^-') {
+        return $Value
+    }
+
+    return '"' + ($Value -replace '"', '""') + '"'
+}
+
+function Start-ElevatedSetup {
+    param([string[]]$ScriptArguments = @())
+
+    $wrapperPath = Join-Path ([IO.Path]::GetTempPath()) "AntrevaDesk-ElevatedSetup-$PID.cmd"
+    $powerShellArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath) + $ScriptArguments
+    $powerShellCommand = 'powershell.exe ' + (($powerShellArgs | ForEach-Object { ConvertTo-CmdArgument -Value $_ }) -join ' ')
+    $wrapperLines = @(
+        '@echo off',
+        $powerShellCommand,
+        'set "ANTREVA_EXIT=%ERRORLEVEL%"',
+        'if not "%ANTREVA_EXIT%"=="0" (',
+        '  echo.',
+        '  echo Antreva Desk setup failed with exit code %ANTREVA_EXIT%.',
+        "  echo Log file: $SetupLogPath",
+        '  echo.',
+        '  echo Press any key to close this window.',
+        '  pause > nul',
+        ')',
+        'exit /b %ANTREVA_EXIT%'
+    )
+
+    Set-Content -LiteralPath $wrapperPath -Encoding ASCII -Value $wrapperLines
+    Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', "`"$wrapperPath`"") -Verb RunAs
+}
+
+function Start-SetupTranscript {
+    Write-Output "Setup log: $SetupLogPath"
+    try {
+        Start-Transcript -LiteralPath $SetupLogPath -Append | Out-Null
+    } catch {
+        Write-Warning "Could not start setup transcript at $SetupLogPath. $($_.Exception.Message)"
+    }
 }
 
 function Get-InstalledRustDeskExe {
@@ -263,19 +308,18 @@ if ($signature.Status -ne 'Valid') {
 
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires elevation. Relaunching this script as Administrator..."
-    $args = @(
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', "`"$PSCommandPath`"",
-        '-PolicyPath', "`"$PolicyPath`"",
-        '-ArtifactsDir', "`"$ArtifactsDir`""
+    $elevatedArgs = @(
+        '-PolicyPath', $PolicyPath,
+        '-ArtifactsDir', $ArtifactsDir
     )
     if ($LaunchAfterConfigure) {
-        $args += '-LaunchAfterConfigure'
+        $elevatedArgs += '-LaunchAfterConfigure'
     }
-    Start-Process -FilePath 'powershell.exe' -ArgumentList $args -Verb RunAs
+    Start-ElevatedSetup -ScriptArguments $elevatedArgs
     exit 0
 }
+
+Start-SetupTranscript
 
 Write-Output "Antreva Remote Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."

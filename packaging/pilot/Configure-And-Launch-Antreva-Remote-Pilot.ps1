@@ -15,6 +15,7 @@ $InstallDir = Join-Path $env:LOCALAPPDATA 'AntrevaDesk'
 $Launcher = Join-Path $InstallDir 'Launch Antreva Desk.cmd'
 $ShortcutName = 'Antreva Desk'
 $SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x64'
+$SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
 
 $ManagedOptions = @{
     'custom-rendezvous-server' = '104.184.67.190'
@@ -147,6 +148,50 @@ function Assert-AntrevaDeskWindowsSupport {
     }
 
     return $windowsSupport
+}
+
+function ConvertTo-CmdArgument {
+    param([Parameter(Mandatory = $true)][string]$Value)
+
+    if ($Value -match '^-') {
+        return $Value
+    }
+
+    return '"' + ($Value -replace '"', '""') + '"'
+}
+
+function Start-ElevatedSetup {
+    param([string[]]$ScriptArguments = @())
+
+    $wrapperPath = Join-Path ([IO.Path]::GetTempPath()) "AntrevaDesk-ElevatedSetup-$PID.cmd"
+    $powerShellArgs = @('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', $PSCommandPath) + $ScriptArguments
+    $powerShellCommand = 'powershell.exe ' + (($powerShellArgs | ForEach-Object { ConvertTo-CmdArgument -Value $_ }) -join ' ')
+    $wrapperLines = @(
+        '@echo off',
+        $powerShellCommand,
+        'set "ANTREVA_EXIT=%ERRORLEVEL%"',
+        'if not "%ANTREVA_EXIT%"=="0" (',
+        '  echo.',
+        '  echo Antreva Desk setup failed with exit code %ANTREVA_EXIT%.',
+        "  echo Log file: $SetupLogPath",
+        '  echo.',
+        '  echo Press any key to close this window.',
+        '  pause > nul',
+        ')',
+        'exit /b %ANTREVA_EXIT%'
+    )
+
+    Set-Content -LiteralPath $wrapperPath -Encoding ASCII -Value $wrapperLines
+    Start-Process -FilePath 'cmd.exe' -ArgumentList @('/c', "`"$wrapperPath`"") -Verb RunAs
+}
+
+function Start-SetupTranscript {
+    Write-Output "Setup log: $SetupLogPath"
+    try {
+        Start-Transcript -LiteralPath $SetupLogPath -Append | Out-Null
+    } catch {
+        Write-Warning "Could not start setup transcript at $SetupLogPath. $($_.Exception.Message)"
+    }
 }
 
 function Get-InstalledRustDeskExe {
@@ -338,14 +383,11 @@ Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($wi
 
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires administrator permission. Relaunching as Administrator..."
-    $args = @(
-        '-NoProfile',
-        '-ExecutionPolicy', 'Bypass',
-        '-File', "`"$PSCommandPath`""
-    )
-    Start-Process -FilePath 'powershell.exe' -ArgumentList $args -Verb RunAs
+    Start-ElevatedSetup
     exit 0
 }
+
+Start-SetupTranscript
 
 if (-not (Test-Path -LiteralPath $PortableExe)) {
     throw "Missing pilot executable next to this script: $PortableExe"
