@@ -28,7 +28,7 @@ foreach ($property in $options.PSObject.Properties) {
     $value = [string]$property.Value
     Write-Output "Applying RustDesk option: $name"
     & $RustDeskExe --option $name $value
-    if ($LASTEXITCODE -ne 0) {
+    if ($null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0) {
         throw "Failed to apply RustDesk option '$name' with exit code $LASTEXITCODE."
     }
 }

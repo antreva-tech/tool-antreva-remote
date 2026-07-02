@@ -60,6 +60,10 @@ artifacts.
 For internal test machines, `scripts/Apply-AntrevaClientPolicy.ps1` can apply
 the Antreva RustDesk options to a built `rustdesk.exe` before packaging.
 
+For the fastest two-machine pilot using the official signed RustDesk binary,
+run `scripts/Setup-WindowsPilot.ps1` and follow
+`docs/operations/PILOT-WINDOWS-TEST.md`.
+
 ## License
 
 RustDesk and RustDesk Server are AGPL-3.0 projects. Antreva Remote keeps the
