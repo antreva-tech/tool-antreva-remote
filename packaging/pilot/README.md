@@ -49,6 +49,15 @@ Set-ExecutionPolicy -Scope Process Bypass
 This pilot does not install a Windows service. Use the `Antreva Remote`
 shortcut whenever you need a support session.
 
+If you previously installed normal RustDesk, close it before testing Antreva
+Remote. The pilot setup and shortcut also stop old `rustdesk.exe` processes so
+the session does not stay attached to RustDesk's public server. The setup also
+writes the Antreva ID server, relay server, and public key before launching.
+
+If you see `Failed to connect: the target device is offline or does not exist`,
+replace the bundle on both computers, rerun `Antreva-Remote-Pilot-Setup.cmd` on
+both computers, and use the new ID shown by the client after the rerun.
+
 ## Test Flow
 
 1. Run this bundle on the client computer and leave RustDesk open.
