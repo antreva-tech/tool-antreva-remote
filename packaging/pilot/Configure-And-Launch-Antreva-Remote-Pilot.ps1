@@ -1,5 +1,12 @@
 [CmdletBinding()]
-param()
+param(
+    [ValidateSet('auto', 'x86', 'x64')]
+    [string]$Architecture = 'auto',
+
+    [string]$PortableExe,
+
+    [string]$PasswordEnvironmentVariable
+)
 
 $ErrorActionPreference = 'Stop'
 
@@ -8,14 +15,24 @@ if ($PSVersionTable.PSVersion.Major -lt $MinimumPowerShellMajor) {
     throw 'PowerShell 5.1 or newer is required on Windows 7. PowerShell 3 or newer is required on Windows 8 through Windows 11.'
 }
 
-$ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
-$PilotExeName = 'rustdesk-host=104.184.67.190,key=YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=,relay=104.184.67.190.exe'
-$PortableExe = Join-Path $PSScriptRoot $PilotExeName
+$Payloads = @{
+    x64 = @{
+        FileName = 'rustdesk-1.4.8-x86_64.exe'
+        Sha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
+        Label = '64-bit'
+    }
+    x86 = @{
+        FileName = 'rustdesk-1.4.8-x86-sciter.exe'
+        Sha256 = '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7'
+        Label = '32-bit'
+    }
+}
 $InstallDir = Join-Path $env:LOCALAPPDATA 'AntrevaDesk'
 $Launcher = Join-Path $InstallDir 'Launch Antreva Desk.cmd'
 $ShortcutName = 'Antreva Desk'
-$SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x64'
+$SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x86/x64'
 $SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
+$InstallerPasswordEnvironmentVariableName = 'ANTREVA_DESK_PASSWORD'
 
 $ManagedOptions = @{
     'custom-rendezvous-server' = '104.184.67.190'
@@ -49,6 +66,8 @@ $ManagedOptions = @{
     'disable-unlock-pin' = 'Y'
 }
 
+$RustDeskConfigName = "rustdesk-host=$($ManagedOptions.'custom-rendezvous-server'),key=$($ManagedOptions.key),relay=$($ManagedOptions.'relay-server').exe"
+
 function Test-IsAdministrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = New-Object Security.Principal.WindowsPrincipal($identity)
@@ -66,6 +85,29 @@ function ConvertFrom-SecureStringForProcess {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
         }
     }
+}
+
+function Get-PermanentSupportPassword {
+    param([string]$EnvironmentVariableName)
+
+    if (-not [string]::IsNullOrWhiteSpace($EnvironmentVariableName)) {
+        $value = [Environment]::GetEnvironmentVariable($EnvironmentVariableName, 'Process')
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            throw "Permanent support password was not provided by the AntrevaDesk installer."
+        }
+        return $value
+    }
+
+    $password1 = Read-Host -AsSecureString 'Enter the permanent support password'
+    $password2 = Read-Host -AsSecureString 'Confirm the permanent support password'
+    $plainPassword1 = ConvertFrom-SecureStringForProcess -SecureString $password1
+    $plainPassword2 = ConvertFrom-SecureStringForProcess -SecureString $password2
+
+    if ($plainPassword1 -ne $plainPassword2) {
+        throw 'Permanent support passwords did not match.'
+    }
+
+    return $plainPassword1
 }
 
 function Get-Sha256Hash {
@@ -86,7 +128,55 @@ function Get-Sha256Hash {
     }
 }
 
+function Test-Is64BitOperatingSystem {
+    try {
+        return [Environment]::Is64BitOperatingSystem
+    } catch {
+        $os = Get-WmiObject -Class Win32_OperatingSystem
+        return ([string]$os.OSArchitecture) -match '64'
+    }
+}
+
+function Resolve-RustDeskArchitecture {
+    param([Parameter(Mandatory = $true)][string]$RequestedArchitecture)
+
+    if ($RequestedArchitecture -ne 'auto') {
+        return $RequestedArchitecture
+    }
+    if (Test-Is64BitOperatingSystem) {
+        return 'x64'
+    }
+
+    return 'x86'
+}
+
+function Get-RustDeskPayloadMetadata {
+    param([Parameter(Mandatory = $true)][string]$SelectedArchitecture)
+
+    if (-not $Payloads.ContainsKey($SelectedArchitecture)) {
+        throw "Unsupported AntrevaDesk installer architecture: $SelectedArchitecture."
+    }
+
+    return $Payloads[$SelectedArchitecture]
+}
+
+function Get-DefaultPortableExePath {
+    param(
+        [Parameter(Mandatory = $true)][string]$SelectedArchitecture,
+        [Parameter(Mandatory = $true)][hashtable]$PayloadMetadata
+    )
+
+    $payloadPath = Join-Path $PSScriptRoot (Join-Path "payloads\$SelectedArchitecture" ([string]$PayloadMetadata.FileName))
+    if (Test-Path -LiteralPath $payloadPath) {
+        return $payloadPath
+    }
+
+    return Join-Path $PSScriptRoot ([string]$PayloadMetadata.FileName)
+}
+
 function Test-SupportedWindowsVersion {
+    param([Parameter(Mandatory = $true)][string]$SelectedArchitecture)
+
     $os = Get-WmiObject -Class Win32_OperatingSystem
     $version = [Version]$os.Version
     $servicePackMajor = [int]$os.ServicePackMajorVersion
@@ -97,8 +187,8 @@ function Test-SupportedWindowsVersion {
         throw "Antreva Desk $SupportedWindowsLabel support is limited to Windows client editions. Detected: $caption."
     }
 
-    if ($architecture -notmatch '64') {
-        throw "Antreva Desk $SupportedWindowsLabel support is x64 only. 32-bit Windows is not supported."
+    if ($SelectedArchitecture -eq 'x64' -and $architecture -notmatch '64') {
+        throw "Antreva Desk 64-bit installation requires 64-bit Windows. Choose the 32-bit installer option for this computer."
     }
 
     $isWindows7 = $version.Major -eq 6 -and $version.Minor -eq 1
@@ -142,7 +232,9 @@ function Test-Windows7Prerequisites {
 }
 
 function Assert-AntrevaDeskWindowsSupport {
-    $windowsSupport = Test-SupportedWindowsVersion
+    param([Parameter(Mandatory = $true)][string]$SelectedArchitecture)
+
+    $windowsSupport = Test-SupportedWindowsVersion -SelectedArchitecture $SelectedArchitecture
     if ($windowsSupport.IsWindows7) {
         Test-Windows7Prerequisites
     }
@@ -589,12 +681,26 @@ function Invoke-RustDeskManagedInstall {
     throw "RustDesk installation did not complete. Installer result: $exitCode. $installText"
 }
 
-$windowsSupport = Assert-AntrevaDeskWindowsSupport
-Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($windowsSupport.Version) $($windowsSupport.Architecture)."
+$SelectedArchitecture = Resolve-RustDeskArchitecture -RequestedArchitecture $Architecture
+$PayloadMetadata = Get-RustDeskPayloadMetadata -SelectedArchitecture $SelectedArchitecture
+if ([string]::IsNullOrWhiteSpace($PortableExe)) {
+    $PortableExe = Get-DefaultPortableExePath -SelectedArchitecture $SelectedArchitecture -PayloadMetadata $PayloadMetadata
+}
+$ExpectedSha256 = [string]$PayloadMetadata.Sha256
+
+$windowsSupport = Assert-AntrevaDeskWindowsSupport -SelectedArchitecture $SelectedArchitecture
+Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($windowsSupport.Version) $($windowsSupport.Architecture), AntrevaDesk $($PayloadMetadata.Label) payload."
 
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires administrator permission. Relaunching as Administrator..."
-    Start-ElevatedSetup
+    $elevatedSetupArguments = @(
+        '-Architecture', $SelectedArchitecture,
+        '-PortableExe', $PortableExe
+    )
+    if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {
+        $elevatedSetupArguments += @('-PasswordEnvironmentVariable', $PasswordEnvironmentVariable)
+    }
+    Start-ElevatedSetup -ScriptArguments $elevatedSetupArguments
     exit 0
 }
 
@@ -614,19 +720,16 @@ if ($signature.Status -ne 'Valid') {
     throw "Pilot executable signature is not valid: $($signature.StatusMessage)"
 }
 
-Write-Output "Antreva Desk 0.1.0 Managed Access setup"
+Write-Output "Antreva Desk 1.0.0 Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."
-$password1 = Read-Host -AsSecureString 'Enter the permanent support password'
-$password2 = Read-Host -AsSecureString 'Confirm the permanent support password'
-$plainPassword1 = ConvertFrom-SecureStringForProcess -SecureString $password1
-$plainPassword2 = ConvertFrom-SecureStringForProcess -SecureString $password2
+$plainPassword1 = Get-PermanentSupportPassword -EnvironmentVariableName $PasswordEnvironmentVariable
+if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {
+    [Environment]::SetEnvironmentVariable($PasswordEnvironmentVariable, $null, 'Process')
+}
 
 try {
     if ([string]::IsNullOrWhiteSpace($plainPassword1)) {
         throw 'Permanent support password cannot be empty.'
-    }
-    if ($plainPassword1 -ne $plainPassword2) {
-        throw 'Permanent support passwords did not match.'
     }
 
     Write-Output "Stopping existing RustDesk processes..."
@@ -636,7 +739,7 @@ try {
     Write-Output "Installing Antreva Desk managed access service..."
     $installedExe = Invoke-RustDeskManagedInstall -InstallerExe $PortableExe
 
-    Import-RustDeskCustomServerConfig -RustDeskExe $installedExe -ConfigName (Split-Path -Leaf $PortableExe)
+    Import-RustDeskCustomServerConfig -RustDeskExe $installedExe -ConfigName $RustDeskConfigName
 
     foreach ($property in $ManagedOptions.GetEnumerator()) {
         Invoke-RustDeskOption -RustDeskExe $installedExe -Name $property.Key -Value $property.Value
@@ -675,8 +778,5 @@ start "" "$installedExe"
 } finally {
     if ($null -ne $plainPassword1) {
         $plainPassword1 = $null
-    }
-    if ($null -ne $plainPassword2) {
-        $plainPassword2 = $null
     }
 }

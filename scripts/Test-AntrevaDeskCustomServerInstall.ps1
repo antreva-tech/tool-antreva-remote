@@ -67,7 +67,7 @@ foreach ($script in @($packagedSetup, $repoSetup)) {
     Assert-NotContains -Name 'permanent password stdout Done requirement' -Text $script -Unexpected "text -notmatch 'Done!'"
 }
 
-foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', 'Split-Path -Leaf $PortableExe')) {
+foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', '$RustDeskConfigName', 'rustdesk-host=$($ManagedOptions')) {
     Assert-Contains -Name 'packaged custom server import' -Text $packagedSetup -Expected $expected
 }
 

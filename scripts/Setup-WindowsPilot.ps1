@@ -2,6 +2,9 @@
 param(
     [string]$PolicyPath,
     [string]$ArtifactsDir,
+    [ValidateSet('auto', 'x86', 'x64')]
+    [string]$Architecture = 'auto',
+    [string]$PortableExe,
     [switch]$LaunchAfterConfigure
 )
 
@@ -23,11 +26,19 @@ if ([string]::IsNullOrWhiteSpace($ArtifactsDir)) {
 }
 
 $Version = '1.4.8'
-$FileName = "rustdesk-$Version-x86_64.exe"
-$DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$Version/$FileName"
-$ExpectedSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
-$PortableExe = Join-Path $ArtifactsDir $FileName
-$SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x64'
+$Payloads = @{
+    x64 = @{
+        FileName = 'rustdesk-1.4.8-x86_64.exe'
+        Sha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
+        Label = '64-bit'
+    }
+    x86 = @{
+        FileName = 'rustdesk-1.4.8-x86-sciter.exe'
+        Sha256 = '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7'
+        Label = '32-bit'
+    }
+}
+$SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x86/x64'
 $SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
 
 function Test-IsAdministrator {
@@ -75,7 +86,41 @@ function Set-ModernTlsIfAvailable {
     }
 }
 
+function Test-Is64BitOperatingSystem {
+    try {
+        return [Environment]::Is64BitOperatingSystem
+    } catch {
+        $os = Get-WmiObject -Class Win32_OperatingSystem
+        return ([string]$os.OSArchitecture) -match '64'
+    }
+}
+
+function Resolve-RustDeskArchitecture {
+    param([Parameter(Mandatory = $true)][string]$RequestedArchitecture)
+
+    if ($RequestedArchitecture -ne 'auto') {
+        return $RequestedArchitecture
+    }
+    if (Test-Is64BitOperatingSystem) {
+        return 'x64'
+    }
+
+    return 'x86'
+}
+
+function Get-RustDeskPayloadMetadata {
+    param([Parameter(Mandatory = $true)][string]$SelectedArchitecture)
+
+    if (-not $Payloads.ContainsKey($SelectedArchitecture)) {
+        throw "Unsupported AntrevaDesk installer architecture: $SelectedArchitecture."
+    }
+
+    return $Payloads[$SelectedArchitecture]
+}
+
 function Test-SupportedWindowsVersion {
+    param([Parameter(Mandatory = $true)][string]$SelectedArchitecture)
+
     $os = Get-WmiObject -Class Win32_OperatingSystem
     $version = [Version]$os.Version
     $servicePackMajor = [int]$os.ServicePackMajorVersion
@@ -86,8 +131,8 @@ function Test-SupportedWindowsVersion {
         throw "Antreva Desk $SupportedWindowsLabel support is limited to Windows client editions. Detected: $caption."
     }
 
-    if ($architecture -notmatch '64') {
-        throw "Antreva Desk $SupportedWindowsLabel support is x64 only. 32-bit Windows is not supported."
+    if ($SelectedArchitecture -eq 'x64' -and $architecture -notmatch '64') {
+        throw "Antreva Desk 64-bit installation requires 64-bit Windows. Choose the 32-bit installer option for this computer."
     }
 
     $isWindows7 = $version.Major -eq 6 -and $version.Minor -eq 1
@@ -131,7 +176,9 @@ function Test-Windows7Prerequisites {
 }
 
 function Assert-AntrevaDeskWindowsSupport {
-    $windowsSupport = Test-SupportedWindowsVersion
+    param([Parameter(Mandatory = $true)][string]$SelectedArchitecture)
+
+    $windowsSupport = Test-SupportedWindowsVersion -SelectedArchitecture $SelectedArchitecture
     if ($windowsSupport.IsWindows7) {
         Test-Windows7Prerequisites
     }
@@ -376,15 +423,24 @@ function Invoke-RustDeskManagedInstall {
     throw "RustDesk installation did not complete. Installer result: $exitCode. $installText"
 }
 
-$windowsSupport = Assert-AntrevaDeskWindowsSupport
-Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($windowsSupport.Version) $($windowsSupport.Architecture)."
+$SelectedArchitecture = Resolve-RustDeskArchitecture -RequestedArchitecture $Architecture
+$PayloadMetadata = Get-RustDeskPayloadMetadata -SelectedArchitecture $SelectedArchitecture
+$FileName = [string]$PayloadMetadata.FileName
+$DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$Version/$FileName"
+$ExpectedSha256 = [string]$PayloadMetadata.Sha256
+if ([string]::IsNullOrWhiteSpace($PortableExe)) {
+    $PortableExe = Join-Path $ArtifactsDir $FileName
+}
+
+$windowsSupport = Assert-AntrevaDeskWindowsSupport -SelectedArchitecture $SelectedArchitecture
+Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($windowsSupport.Version) $($windowsSupport.Architecture), AntrevaDesk $($PayloadMetadata.Label) payload."
 
 & (Join-Path $ScriptDir 'Validate-AntrevaRemote.ps1') -PolicyPath $PolicyPath
 
 New-Item -ItemType Directory -Force -Path $ArtifactsDir | Out-Null
 
 if (-not (Test-Path -LiteralPath $PortableExe)) {
-    Write-Output "Downloading RustDesk $Version Windows x86_64..."
+    Write-Output "Downloading RustDesk $Version Windows $($PayloadMetadata.Label)..."
     Set-ModernTlsIfAvailable
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $PortableExe
 }
@@ -403,7 +459,9 @@ if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires elevation. Relaunching this script as Administrator..."
     $elevatedArgs = @(
         '-PolicyPath', $PolicyPath,
-        '-ArtifactsDir', $ArtifactsDir
+        '-ArtifactsDir', $ArtifactsDir,
+        '-Architecture', $SelectedArchitecture,
+        '-PortableExe', $PortableExe
     )
     if ($LaunchAfterConfigure) {
         $elevatedArgs += '-LaunchAfterConfigure'

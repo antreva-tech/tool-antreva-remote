@@ -1,24 +1,21 @@
-# Antreva Desk 0.1.0 Managed Access
+# Antreva Desk 1.0.0 Managed Access
 
-This is a temporary pilot bundle for testing Antreva Desk Managed Access while
-the Antreva-specific code signing and branded build are being prepared.
+This is a temporary pilot installer for testing Antreva Desk Managed Access
+while the Antreva-specific code signing and fully branded client build are
+being prepared.
 
-The included executable is the official RustDesk `1.4.8` Windows x86_64 binary,
-signed by the upstream RustDesk publisher. The setup script verifies the EXE
-hash and signature, requests Windows administrator elevation, installs the
-RustDesk service, applies Antreva server settings, and prompts the technician to
-set the permanent support password.
+`AntrevaDesk-Setup-1.0.0.exe` is a branded GUI installer that bundles the
+official RustDesk `1.4.8` Windows payloads:
 
-This pilot bundle supports Windows 7 SP1 through Windows 11 x64. Windows 7
-requires WMF 5.1 plus SHA-2 updates KB4490628 and KB4474419 before setup.
-32-bit Windows is not supported.
+- `rustdesk-1.4.8-x86_64.exe`
+- `rustdesk-1.4.8-x86-sciter.exe`
 
-## Contents
+The installer verifies the selected EXE hash and signature, requests Windows
+administrator elevation, collects the permanent support password in the GUI,
+installs the RustDesk service, and applies Antreva server settings.
 
-- `rustdesk-host=104.184.67.190,key=YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=,relay=104.184.67.190.exe`
-- `Antreva-Remote-Pilot-Setup.cmd`
-- `Configure-And-Launch-Antreva-Remote-Pilot.ps1`
-- `README.md`
+This pilot installer supports Windows 7 SP1 through Windows 11 x86/x64. Windows
+7 requires WMF 5.1 plus SHA-2 updates KB4490628 and KB4474419 before setup.
 
 ## Server Settings
 
@@ -31,16 +28,18 @@ requires WMF 5.1 plus SHA-2 updates KB4490628 and KB4474419 before setup.
 During authorized onboarding, double-click:
 
 ```text
-Antreva-Remote-Pilot-Setup.cmd
+AntrevaDesk-Setup-1.0.0.exe
 ```
 
 The setup will:
 
-- verify the supported Windows 7-11 x64 client matrix;
+- verify the supported Windows 7-11 x86/x64 client matrix;
+- choose 64-bit by default on 64-bit Windows;
+- disable 64-bit installation on 32-bit Windows;
 - request administrator elevation;
+- collect and confirm the permanent support password in the installer wizard;
 - install the RustDesk service;
 - import and verify the Antreva ID server, relay server, and public key;
-- prompt the technician to enter and confirm the permanent support password;
 - apply Antreva server and managed-access settings;
 - create visible `Antreva Desk` shortcuts;
 - launch the installed app.
@@ -51,31 +50,25 @@ The setup creates:
 - Start Menu folder: `Antreva > Antreva Desk`
 - Local launcher folder: `%LOCALAPPDATA%\AntrevaDesk`
 
-Alternative PowerShell command:
-
-```powershell
-Set-ExecutionPolicy -Scope Process Bypass
-.\Configure-And-Launch-Antreva-Remote-Pilot.ps1
-```
-
 ## Test Flow
 
-1. Run this bundle on the client computer during authorized onboarding.
-2. Approve the Windows administrator elevation prompt.
-3. Enter and confirm the permanent support password.
-4. Leave Antreva Desk/RustDesk running after setup finishes.
-5. Record the client RustDesk ID shown in the app.
-6. From the technician computer, connect to that ID using the permanent support
+1. Run this installer on the client computer during authorized onboarding.
+2. Select the recommended architecture unless a 32-bit Windows computer
+   requires the 32-bit payload.
+3. Enter and confirm the permanent support password in the installer.
+4. Approve the Windows administrator elevation prompt if Windows asks for it.
+5. Leave Antreva Desk/RustDesk running after setup finishes.
+6. Record the client RustDesk ID shown in the app.
+7. From the technician computer, connect to that ID using the permanent support
    password.
-7. Test remote control and file transfer in both directions.
-8. Confirm the tray/app remains visible on the client computer.
+8. Test remote control and file transfer in both directions.
+9. Confirm the tray/app remains visible on the client computer.
 
 ## Limitations
 
-- The launcher and shortcuts are named Antreva Desk, but the app UI is still
-  RustDesk-branded.
-- It is signed by the upstream RustDesk publisher, not Antreva.
-- The setup uses a visible Antreva onboarding script, but the underlying
-  RustDesk installer command is the upstream installer path.
-- The final Antreva Desk build will be separately branded and signed after
-  Antreva code signing is ready.
+- The installer, launcher, and shortcuts are named AntrevaDesk or Antreva Desk,
+  but the app UI is still RustDesk-branded.
+- The RustDesk payloads are signed by the upstream RustDesk publisher, not
+  Antreva.
+- The final Antreva Desk client build will be separately branded and signed
+  after Antreva code signing is ready.
