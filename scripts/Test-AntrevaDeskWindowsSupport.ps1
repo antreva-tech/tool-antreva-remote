@@ -86,6 +86,13 @@ foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.
 foreach ($expected in @('AntrevaDesk ArchitecturePage', 'ARCH_X64', 'ARCH_X86', 'RunningX64', '-Architecture', '-PortableExe')) {
     Assert-Contains -Name 'NSIS architecture selection' -Text $nsisScript -Expected $expected
 }
+foreach ($expected in @('RequestExecutionLevel admin', 'AntrevaDesk PasswordPage', 'PASSWORD_ONE', 'PASSWORD_TWO', 'Permanent support password', 'nsExec::ExecToLog', 'SetEnvironmentVariable', 'ANTREVA_DESK_PASSWORD', '-PasswordEnvironmentVariable', '-NonInteractive')) {
+    Assert-Contains -Name 'NSIS GUI-only managed setup' -Text $nsisScript -Expected $expected
+}
+Assert-NotContains -Name 'NSIS visible PowerShell execution' -Text $nsisScript -Unexpected 'ExecWait ''"powershell.exe"'
+foreach ($expected in @('-PasswordEnvironmentVariable', 'Get-PermanentSupportPassword', 'ANTREVA_DESK_PASSWORD')) {
+    Assert-Contains -Name 'PowerShell installer-driven password support' -Text $setupScript -Expected $expected
+}
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskWindowsSupport.ps1'
 Assert-Contains -Name 'release checklist certification' -Text $releaseChecklist -Expected 'Windows 7 SP1 through Windows 11 x86/x64 support matrix has been certified'
 

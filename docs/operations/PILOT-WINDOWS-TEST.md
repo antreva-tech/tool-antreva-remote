@@ -18,7 +18,23 @@ These values are stored in `config/antreva-client-policy.json`.
 
 ## Prepare Each Managed Windows Client
 
-For local developer testing, run this from the repository root:
+For customer-style pilot testing, run:
+
+```text
+AntrevaDesk-Setup-0.1.0.exe
+```
+
+The installer GUI will:
+
+- verify Windows 7-11 x86/x64 support requirements before install;
+- collect the architecture selection;
+- collect and confirm the permanent support password;
+- request administrator elevation;
+- install the RustDesk service;
+- apply and verify the Antreva server and managed-access settings;
+- launch RustDesk when configuration finishes.
+
+For local developer testing only, run this from the repository root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Setup-WindowsPilot.ps1 -LaunchAfterConfigure
@@ -41,26 +57,27 @@ The script will:
 
 Use two machines on different networks if possible.
 
-1. On the client machine, run the managed setup script during authorized
+1. On the client machine, run `AntrevaDesk-Setup-0.1.0.exe` during authorized
    onboarding.
-2. Approve the Windows administrator elevation prompt.
-3. Enter and confirm the permanent support password.
-4. Write down the client RustDesk ID shown in the app.
-5. On the technician machine, run Antreva Remote/RustDesk configured for the
+2. Select the recommended architecture.
+3. Enter and confirm the permanent support password in the installer.
+4. Approve the Windows administrator elevation prompt if Windows asks for it.
+5. Write down the client RustDesk ID shown in the app.
+6. On the technician machine, run Antreva Remote/RustDesk configured for the
    Antreva server.
-6. Enter the client ID from the technician machine and connect.
-7. Authenticate using the permanent support password.
-8. Verify remote control:
+7. Enter the client ID from the technician machine and connect.
+8. Authenticate using the permanent support password.
+9. Verify remote control:
    - move the mouse;
    - type into Notepad;
    - switch windows;
    - disconnect cleanly.
-9. Verify file transfer:
+10. Verify file transfer:
    - send a small file from technician to client;
    - send a small file from client to technician;
    - cancel one transfer mid-way;
    - test a larger file if bandwidth allows.
-10. Confirm the tray/app remains visible on the client machine.
+11. Confirm the tray/app remains visible on the client machine.
 
 Repeat this flow on Windows 7 SP1 x64, Windows 8 x64, Windows 8.1 x64,
 Windows 10 x64, Windows 7 SP1 x86, Windows 8 x86, Windows 8.1 x86, Windows 10

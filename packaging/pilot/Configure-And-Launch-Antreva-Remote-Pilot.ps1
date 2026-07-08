@@ -3,7 +3,9 @@ param(
     [ValidateSet('auto', 'x86', 'x64')]
     [string]$Architecture = 'auto',
 
-    [string]$PortableExe
+    [string]$PortableExe,
+
+    [string]$PasswordEnvironmentVariable
 )
 
 $ErrorActionPreference = 'Stop'
@@ -30,6 +32,7 @@ $Launcher = Join-Path $InstallDir 'Launch Antreva Desk.cmd'
 $ShortcutName = 'Antreva Desk'
 $SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x86/x64'
 $SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
+$InstallerPasswordEnvironmentVariableName = 'ANTREVA_DESK_PASSWORD'
 
 $ManagedOptions = @{
     'custom-rendezvous-server' = '104.184.67.190'
@@ -82,6 +85,29 @@ function ConvertFrom-SecureStringForProcess {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
         }
     }
+}
+
+function Get-PermanentSupportPassword {
+    param([string]$EnvironmentVariableName)
+
+    if (-not [string]::IsNullOrWhiteSpace($EnvironmentVariableName)) {
+        $value = [Environment]::GetEnvironmentVariable($EnvironmentVariableName, 'Process')
+        if ([string]::IsNullOrWhiteSpace($value)) {
+            throw "Permanent support password was not provided by the AntrevaDesk installer."
+        }
+        return $value
+    }
+
+    $password1 = Read-Host -AsSecureString 'Enter the permanent support password'
+    $password2 = Read-Host -AsSecureString 'Confirm the permanent support password'
+    $plainPassword1 = ConvertFrom-SecureStringForProcess -SecureString $password1
+    $plainPassword2 = ConvertFrom-SecureStringForProcess -SecureString $password2
+
+    if ($plainPassword1 -ne $plainPassword2) {
+        throw 'Permanent support passwords did not match.'
+    }
+
+    return $plainPassword1
 }
 
 function Get-Sha256Hash {
@@ -667,10 +693,14 @@ Write-Output "Windows support preflight passed: $($windowsSupport.Caption) $($wi
 
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires administrator permission. Relaunching as Administrator..."
-    Start-ElevatedSetup -ScriptArguments @(
+    $elevatedSetupArguments = @(
         '-Architecture', $SelectedArchitecture,
         '-PortableExe', $PortableExe
     )
+    if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {
+        $elevatedSetupArguments += @('-PasswordEnvironmentVariable', $PasswordEnvironmentVariable)
+    }
+    Start-ElevatedSetup -ScriptArguments $elevatedSetupArguments
     exit 0
 }
 
@@ -692,17 +722,14 @@ if ($signature.Status -ne 'Valid') {
 
 Write-Output "Antreva Desk 0.1.0 Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."
-$password1 = Read-Host -AsSecureString 'Enter the permanent support password'
-$password2 = Read-Host -AsSecureString 'Confirm the permanent support password'
-$plainPassword1 = ConvertFrom-SecureStringForProcess -SecureString $password1
-$plainPassword2 = ConvertFrom-SecureStringForProcess -SecureString $password2
+$plainPassword1 = Get-PermanentSupportPassword -EnvironmentVariableName $PasswordEnvironmentVariable
+if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {
+    [Environment]::SetEnvironmentVariable($PasswordEnvironmentVariable, $null, 'Process')
+}
 
 try {
     if ([string]::IsNullOrWhiteSpace($plainPassword1)) {
         throw 'Permanent support password cannot be empty.'
-    }
-    if ($plainPassword1 -ne $plainPassword2) {
-        throw 'Permanent support passwords did not match.'
     }
 
     Write-Output "Stopping existing RustDesk processes..."
@@ -751,8 +778,5 @@ start "" "$installedExe"
 } finally {
     if ($null -ne $plainPassword1) {
         $plainPassword1 = $null
-    }
-    if ($null -ne $plainPassword2) {
-        $plainPassword2 = $null
     }
 }

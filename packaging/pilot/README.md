@@ -11,8 +11,8 @@ official RustDesk `1.4.8` Windows payloads:
 - `rustdesk-1.4.8-x86-sciter.exe`
 
 The installer verifies the selected EXE hash and signature, requests Windows
-administrator elevation, installs the RustDesk service, applies Antreva server
-settings, and prompts the technician to set the permanent support password.
+administrator elevation, collects the permanent support password in the GUI,
+installs the RustDesk service, and applies Antreva server settings.
 
 This pilot installer supports Windows 7 SP1 through Windows 11 x86/x64. Windows
 7 requires WMF 5.1 plus SHA-2 updates KB4490628 and KB4474419 before setup.
@@ -37,9 +37,9 @@ The setup will:
 - choose 64-bit by default on 64-bit Windows;
 - disable 64-bit installation on 32-bit Windows;
 - request administrator elevation;
+- collect and confirm the permanent support password in the installer wizard;
 - install the RustDesk service;
 - import and verify the Antreva ID server, relay server, and public key;
-- prompt the technician to enter and confirm the permanent support password;
 - apply Antreva server and managed-access settings;
 - create visible `Antreva Desk` shortcuts;
 - launch the installed app.
@@ -55,8 +55,8 @@ The setup creates:
 1. Run this installer on the client computer during authorized onboarding.
 2. Select the recommended architecture unless a 32-bit Windows computer
    requires the 32-bit payload.
-3. Approve the Windows administrator elevation prompt.
-4. Enter and confirm the permanent support password.
+3. Enter and confirm the permanent support password in the installer.
+4. Approve the Windows administrator elevation prompt if Windows asks for it.
 5. Leave Antreva Desk/RustDesk running after setup finishes.
 6. Record the client RustDesk ID shown in the app.
 7. From the technician computer, connect to that ID using the permanent support
