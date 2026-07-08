@@ -41,6 +41,30 @@ function Assert-NotContains {
     }
 }
 
+function Assert-BitmapDimensions {
+    param(
+        [Parameter(Mandatory = $true)][string]$Name,
+        [Parameter(Mandatory = $true)][string]$Path,
+        [Parameter(Mandatory = $true)][int]$ExpectedWidth,
+        [Parameter(Mandatory = $true)][int]$ExpectedHeight
+    )
+
+    Add-Type -AssemblyName System.Drawing
+    $fullPath = Join-Path $Root $Path
+    if (-not (Test-Path -LiteralPath $fullPath)) {
+        throw "Windows support check failed: $Name image is missing: $Path"
+    }
+
+    $image = [System.Drawing.Image]::FromFile($fullPath)
+    try {
+        if ($image.Width -ne $ExpectedWidth -or $image.Height -ne $ExpectedHeight) {
+            throw "Windows support check failed: $Name image must be ${ExpectedWidth}x${ExpectedHeight}, got $($image.Width)x$($image.Height)."
+        }
+    } finally {
+        $image.Dispose()
+    }
+}
+
 $supportDoc = Read-RepoFile 'docs\operations\WINDOWS-7-11-SUPPORT.md'
 $pilotReadme = Read-RepoFile 'packaging\pilot\README.md'
 $pilotTest = Read-RepoFile 'docs\operations\PILOT-WINDOWS-TEST.md'
@@ -86,6 +110,8 @@ foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.
 foreach ($expected in @('AntrevaDesk ArchitecturePage', 'ARCH_X64', 'ARCH_X86', 'RunningX64', '-Architecture', '-PortableExe')) {
     Assert-Contains -Name 'NSIS architecture selection' -Text $nsisScript -Expected $expected
 }
+Assert-BitmapDimensions -Name 'NSIS header logo' -Path 'packaging\antrevadesk\assets\banner.bmp' -ExpectedWidth 150 -ExpectedHeight 57
+Assert-BitmapDimensions -Name 'NSIS welcome side logo' -Path 'packaging\antrevadesk\assets\dialog.bmp' -ExpectedWidth 164 -ExpectedHeight 314
 foreach ($expected in @('RequestExecutionLevel admin', 'AntrevaDesk PasswordPage', 'PASSWORD_ONE', 'PASSWORD_TWO', 'Permanent support password', 'nsExec::ExecToLog', 'SetEnvironmentVariable', 'ANTREVA_DESK_PASSWORD', '-PasswordEnvironmentVariable', '-NonInteractive')) {
     Assert-Contains -Name 'NSIS GUI-only managed setup' -Text $nsisScript -Expected $expected
 }
