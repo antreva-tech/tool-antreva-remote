@@ -68,15 +68,15 @@ run `scripts/Setup-WindowsPilot.ps1` and follow
 
 ## Installer Downloads
 
-GitHub Actions builds the pilot installer bundle on pull requests to `main` and
+GitHub Actions builds the AntrevaDesk GUI installer on pull requests to `main` and
 on pushes to `main`.
 
 - Pull requests upload a 30-day workflow artifact for review/testing.
-- Pushes to `main` publish the zip and SHA-256 file to the GitHub Release named
+- Pushes to `main` publish the EXE and SHA-256 file to the GitHub Release named
   `Antreva Desk 0.1.0`.
 
-The release tag is `antreva-desk-0.1.0`, and the installer zip is
-`Antreva-Desk-0.1.0-Windows.zip`.
+The release tag is `antreva-desk-0.1.0`, and the installer is
+`AntrevaDesk-Setup-0.1.0.exe`.
 
 ## License
 

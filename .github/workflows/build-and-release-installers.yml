@@ -29,6 +29,10 @@ jobs:
         shell: pwsh
         run: ./scripts/Test-Repository.ps1
 
+      - name: Install NSIS
+        shell: pwsh
+        run: choco install nsis -y --no-progress
+
       - name: Build pilot installer bundle
         shell: pwsh
         run: ./scripts/Build-PilotBundle.ps1
@@ -36,10 +40,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Antreva-Desk-0.1.0-Windows
+          name: AntrevaDesk-Setup-0.1.0
           path: |
-            artifacts/Antreva-Desk-0.1.0-Windows.zip
-            artifacts/Antreva-Desk-0.1.0-Windows.sha256.txt
+            artifacts/AntrevaDesk-Setup-0.1.0.exe
+            artifacts/AntrevaDesk-Setup-0.1.0.sha256.txt
           if-no-files-found: error
           retention-days: 30
 
@@ -58,19 +62,19 @@ jobs:
       - name: Download installer artifact
         uses: actions/download-artifact@v4
         with:
-          name: Antreva-Desk-0.1.0-Windows
+          name: AntrevaDesk-Setup-0.1.0
           path: release-assets
 
       - name: Write release notes
         shell: bash
         run: |
           {
-            echo "Antreva Desk 0.1.0 managed-access installer."
-            echo "Supports Windows 7 SP1 through Windows 11 x64. Windows 7 requires WMF 5.1, KB4490628, and KB4474419 before setup."
+            echo "Antreva Desk 0.1.0 managed-access GUI installer."
+            echo "Supports Windows 7 SP1 through Windows 11 x86/x64 with installer architecture selection. Windows 7 requires WMF 5.1, KB4490628, and KB4474419 before setup."
             echo
             echo "Built from commit: \`${GITHUB_SHA}\`"
             echo
-            echo "Download Antreva-Desk-0.1.0-Windows.zip and verify it with the attached SHA256 file."
+            echo "Download AntrevaDesk-Setup-0.1.0.exe and verify it with the attached SHA256 file."
           } > release-notes.md
 
       - name: Publish latest release

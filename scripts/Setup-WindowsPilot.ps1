@@ -28,12 +28,12 @@ if ([string]::IsNullOrWhiteSpace($ArtifactsDir)) {
 $Version = '1.4.8'
 $Payloads = @{
     x64 = @{
-        FileName = "rustdesk-$Version-x86_64.exe"
+        FileName = 'rustdesk-1.4.8-x86_64.exe'
         Sha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
         Label = '64-bit'
     }
     x86 = @{
-        FileName = "rustdesk-$Version-x86-sciter.exe"
+        FileName = 'rustdesk-1.4.8-x86-sciter.exe'
         Sha256 = '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7'
         Label = '32-bit'
     }

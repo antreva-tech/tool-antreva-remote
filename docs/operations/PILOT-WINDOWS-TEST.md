@@ -4,9 +4,9 @@ This test uses the official signed RustDesk Windows binary configured for the
 Antreva Remote server and managed-access onboarding. It is not yet the final
 branded Antreva executable.
 
-This run supports Windows 7 SP1 through Windows 11 x64. Windows 7 test systems
-must have WMF 5.1 and SHA-2 updates KB4490628 and KB4474419 installed before
-onboarding. See `docs/operations/WINDOWS-7-11-SUPPORT.md`.
+This run supports Windows 7 SP1 through Windows 11 x86/x64. Windows 7 test
+systems must have WMF 5.1 and SHA-2 updates KB4490628 and KB4474419 installed
+before onboarding. See `docs/operations/WINDOWS-7-11-SUPPORT.md`.
 
 ## Server Values
 
@@ -18,7 +18,7 @@ These values are stored in `config/antreva-client-policy.json`.
 
 ## Prepare Each Managed Windows Client
 
-Run this from the repository root:
+For local developer testing, run this from the repository root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\Setup-WindowsPilot.ps1 -LaunchAfterConfigure
@@ -26,9 +26,9 @@ powershell -ExecutionPolicy Bypass -File .\scripts\Setup-WindowsPilot.ps1 -Launc
 
 The script will:
 
-- verify Windows 7-11 x64 support requirements before install;
+- verify Windows 7-11 x86/x64 support requirements before install;
 - validate the Antreva managed-access policy;
-- download RustDesk `1.4.8` for Windows x86_64 if needed;
+- download the selected RustDesk `1.4.8` Windows payload if needed;
 - verify the release SHA-256;
 - verify the upstream Authenticode signature;
 - relaunch itself as Administrator if needed;
@@ -63,8 +63,8 @@ Use two machines on different networks if possible.
 10. Confirm the tray/app remains visible on the client machine.
 
 Repeat this flow on Windows 7 SP1 x64, Windows 8 x64, Windows 8.1 x64,
-Windows 10 x64, and Windows 11 x64 before claiming Windows 7-11 support for a
-release.
+Windows 10 x64, Windows 7 SP1 x86, Windows 8 x86, Windows 8.1 x86, Windows 10
+x86, and Windows 11 x64 before claiming Windows 7-11 support for a release.
 
 ## Expected Results
 
