@@ -7,11 +7,14 @@ $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyI
 $Root = Resolve-Path (Join-Path $ScriptDir '..')
 
 $expectedProduct = 'Antreva Desk'
-$expectedVersion = '0.1.0'
+$expectedVersion = '1.0.0'
 $expectedReleaseTitle = "$expectedProduct $expectedVersion"
-$expectedBundleName = 'AntrevaDesk-Setup-0.1.0'
+$expectedBundleName = "AntrevaDesk-Setup-$expectedVersion"
 $expectedInstallerName = "$expectedBundleName.exe"
 $expectedChecksumName = "$expectedBundleName.sha256.txt"
+$expectedTagName = 'antreva-desk-1.0.0'
+$legacyInstallerName = 'AntrevaDesk-Setup-0.1.0'
+$legacyTagName = 'antreva-desk-0.1.0'
 $legacyZipName = 'Antreva-Desk-0.1.0-Windows.zip'
 $legacyBundleName = 'Antreva-Remote-Pilot-RustDesk-1.4.8'
 
@@ -27,6 +30,7 @@ $checks = @(
     @{ Name = 'workflow artifact name'; Passed = $workflow.Contains("name: $expectedBundleName") },
     @{ Name = 'workflow installer path'; Passed = $workflow.Contains("artifacts/$expectedInstallerName") },
     @{ Name = 'workflow checksum path'; Passed = $workflow.Contains("artifacts/$expectedChecksumName") },
+    @{ Name = 'workflow release tag'; Passed = $workflow.Contains("TAG_NAME: $expectedTagName") },
     @{ Name = 'build script installer name'; Passed = $buildScript.Contains('$InstallerName = "AntrevaDesk-Setup-$AntrevaDeskVersion"') },
     @{ Name = 'build script installer output'; Passed = $buildScript.Contains('$InstallerPath = Join-Path $OutputDir "$InstallerName.exe"') },
     @{ Name = 'setup script product name'; Passed = $setupScript.Contains("$expectedReleaseTitle Managed Access setup") },
@@ -47,6 +51,9 @@ if ($combined.Contains($legacyBundleName)) {
 }
 if ($combined.Contains($legacyZipName)) {
     throw "Antreva Desk release naming check failed: legacy zip artifact is still present."
+}
+if ($workflow.Contains($legacyInstallerName) -or $workflow.Contains($legacyTagName)) {
+    throw "Antreva Desk release naming check failed: legacy 0.1.0 workflow release surface is still present."
 }
 
 Write-Output "Antreva Desk release naming verification passed."

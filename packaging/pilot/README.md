@@ -1,10 +1,10 @@
-# Antreva Desk 0.1.0 Managed Access
+# Antreva Desk 1.0.0 Managed Access
 
 This is a temporary pilot installer for testing Antreva Desk Managed Access
 while the Antreva-specific code signing and fully branded client build are
 being prepared.
 
-`AntrevaDesk-Setup-0.1.0.exe` is a branded GUI installer that bundles the
+`AntrevaDesk-Setup-1.0.0.exe` is a branded GUI installer that bundles the
 official RustDesk `1.4.8` Windows payloads:
 
 - `rustdesk-1.4.8-x86_64.exe`
@@ -28,7 +28,7 @@ This pilot installer supports Windows 7 SP1 through Windows 11 x86/x64. Windows
 During authorized onboarding, double-click:
 
 ```text
-AntrevaDesk-Setup-0.1.0.exe
+AntrevaDesk-Setup-1.0.0.exe
 ```
 
 The setup will:

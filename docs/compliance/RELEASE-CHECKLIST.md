@@ -17,7 +17,7 @@ Complete this checklist before distributing a build to clients.
 - [ ] Windows binaries are signed with the Antreva code signing certificate.
 - [ ] Source archive or repository tag is published for the exact build.
 - [ ] AGPL/source link is present near the binary download.
-- [ ] GitHub Actions release contains the `AntrevaDesk-Setup-0.1.0.exe`
+- [ ] GitHub Actions release contains the `AntrevaDesk-Setup-1.0.0.exe`
       installer and SHA-256 file.
 - [ ] Office server `data` directory is backed up.
 - [ ] External connectivity to TCP `21114:21119` and UDP `21116` is verified.

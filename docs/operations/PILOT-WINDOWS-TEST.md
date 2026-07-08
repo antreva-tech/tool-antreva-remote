@@ -21,7 +21,7 @@ These values are stored in `config/antreva-client-policy.json`.
 For customer-style pilot testing, run:
 
 ```text
-AntrevaDesk-Setup-0.1.0.exe
+AntrevaDesk-Setup-1.0.0.exe
 ```
 
 The installer GUI will:
@@ -57,7 +57,7 @@ The script will:
 
 Use two machines on different networks if possible.
 
-1. On the client machine, run `AntrevaDesk-Setup-0.1.0.exe` during authorized
+1. On the client machine, run `AntrevaDesk-Setup-1.0.0.exe` during authorized
    onboarding.
 2. Select the recommended architecture.
 3. Enter and confirm the permanent support password in the installer.

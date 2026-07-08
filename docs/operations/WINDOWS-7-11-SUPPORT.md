@@ -1,6 +1,6 @@
 # Windows 7-11 Support
 
-Antreva Desk 0.1.0 supports Windows 7 SP1 through Windows 11 x86/x64 for the
+Antreva Desk 1.0.0 supports Windows 7 SP1 through Windows 11 x86/x64 for the
 managed-access GUI installer. The installer includes both 32-bit and 64-bit
 RustDesk payloads and presents an architecture selection page before setup.
 
@@ -31,7 +31,7 @@ Windows 7 is end-of-life and must be prepared before Antreva Desk onboarding:
    or newer.
 3. Install SHA-2 signing support updates KB4490628 and KB4474419.
 4. Reboot after installing prerequisites.
-5. Run `AntrevaDesk-Setup-0.1.0.exe`.
+5. Run `AntrevaDesk-Setup-1.0.0.exe`.
 
 The setup script checks these prerequisites before installing the managed
 support service. Missing Windows 7 prerequisites stop setup with a visible

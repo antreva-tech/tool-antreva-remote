@@ -21,7 +21,7 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
 }
 
 $RustDeskVersion = '1.4.8'
-$AntrevaDeskVersion = '0.1.0'
+$AntrevaDeskVersion = '1.0.0'
 $InstallerName = "AntrevaDesk-Setup-$AntrevaDeskVersion"
 $InstallerPath = Join-Path $OutputDir "$InstallerName.exe"
 $ChecksumPath = Join-Path $OutputDir "$InstallerName.sha256.txt"
