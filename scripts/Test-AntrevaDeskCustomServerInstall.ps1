@@ -51,6 +51,8 @@ foreach ($script in @($packagedSetup, $repoSetup)) {
     Assert-Contains -Name 'installer finalization message' -Text $script -Expected 'Waiting for RustDesk installer finalization'
     Assert-Contains -Name 'elevated setup wrapper' -Text $script -Expected 'Start-ElevatedSetup'
     Assert-Contains -Name 'setup transcript log' -Text $script -Expected 'AntrevaDesk-Setup.log'
+    Assert-Contains -Name 'stable machine-wide setup log' -Text $script -Expected '[Environment+SpecialFolder]::CommonApplicationData'
+    Assert-Contains -Name 'current-attempt transcript overwrite' -Text $script -Expected 'Start-Transcript -LiteralPath $SetupLogPath -Force'
     Assert-Contains -Name 'elevated failure pause' -Text $script -Expected 'Press any key to close this window'
     Assert-Contains -Name 'elevated failure exit code' -Text $script -Expected 'Antreva Desk setup failed with exit code'
 }
@@ -90,5 +92,6 @@ foreach ($script in @($packagedSetup, $applyPolicy)) {
 
 Assert-NotContains -Name 'packaged all-option verification' -Text $packagedSetup -Unexpected 'Assert-RustDeskManagedOptions'
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskCustomServerInstall.ps1'
+Assert-Contains -Name 'payload validation test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskPayloadValidation.ps1'
 
 Write-Output 'Antreva Desk custom server install verification passed.'

@@ -7,7 +7,7 @@ Unicode true
 !include "WinMessages.nsh"
 
 !ifndef OUTFILE
-  !define OUTFILE "AntrevaDesk-Setup-1.0.0.exe"
+  !define OUTFILE "AntrevaDesk-Setup-1.0.1.exe"
 !endif
 
 Name "AntrevaDesk"
@@ -25,13 +25,14 @@ Icon "assets\antrevadesk.ico"
 !define MUI_WELCOMEPAGE_TITLE "AntrevaDesk Setup"
 !define MUI_WELCOMEPAGE_TEXT "This installer will set up AntrevaDesk managed support on this computer. Administrator approval and a permanent support password are required during setup."
 !define MUI_FINISHPAGE_TITLE "AntrevaDesk setup finished"
-!define MUI_FINISHPAGE_TEXT "AntrevaDesk setup has finished. If setup reported an error, review the installer details and AntrevaDesk setup log."
+!define MUI_FINISHPAGE_TEXT "AntrevaDesk managed support was installed and configured successfully."
 
 Var ARCH_X64
 Var ARCH_X86
 Var SelectedArchitecture
 Var PortableExe
 Var SetupScript
+Var SetupLogPath
 Var PASSWORD_ONE
 Var PASSWORD_TWO
 Var PasswordOneInput
@@ -137,6 +138,11 @@ Section "Install AntrevaDesk"
   File /r "staging\payloads"
 
   StrCpy $SetupScript "$PLUGINSDIR\setup\Configure-And-Launch-Antreva-Remote-Pilot.ps1"
+  ReadEnvStr $SetupLogPath "ProgramData"
+  ${If} $SetupLogPath == ""
+    StrCpy $SetupLogPath "$APPDATA"
+  ${EndIf}
+  StrCpy $SetupLogPath "$SetupLogPath\AntrevaDesk\Logs\AntrevaDesk-Setup.log"
   ${If} $SelectedArchitecture == "x64"
     StrCpy $PortableExe "$PLUGINSDIR\payloads\x64\rustdesk-1.4.8-x86_64.exe"
   ${Else}
@@ -145,13 +151,16 @@ Section "Install AntrevaDesk"
 
   DetailPrint "Running AntrevaDesk managed setup..."
   System::Call 'Kernel32::SetEnvironmentVariable(t "ANTREVA_DESK_PASSWORD", t "$PASSWORD_ONE") i.r1'
-  nsExec::ExecToLog '"powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "$SetupScript" -Architecture "$SelectedArchitecture" -PortableExe "$PortableExe" -PasswordEnvironmentVariable "ANTREVA_DESK_PASSWORD"'
+  nsExec::ExecToLog '"powershell.exe" -NoProfile -NonInteractive -ExecutionPolicy Bypass -WindowStyle Hidden -File "$SetupScript" -Architecture "$SelectedArchitecture" -PortableExe "$PortableExe" -PasswordEnvironmentVariable "ANTREVA_DESK_PASSWORD" -SetupLogPath "$SetupLogPath"'
   Pop $0
   System::Call 'Kernel32::SetEnvironmentVariable(t "ANTREVA_DESK_PASSWORD", t "") i.r1'
   StrCpy $PASSWORD_ONE ""
   StrCpy $PASSWORD_TWO ""
   ${If} $0 != 0
-    SetErrors
-    MessageBox MB_ICONSTOP "AntrevaDesk setup did not finish successfully. Exit code: $0.$\r$\n$\r$\nPlease review the installer details and AntrevaDesk setup log."
+    DetailPrint "AntrevaDesk managed setup failed. Log: $SetupLogPath"
+    SetErrorLevel 1
+    MessageBox MB_ICONSTOP|MB_YESNO "AntrevaDesk managed setup failed. Exit code: $0.$\r$\n$\r$\nThe current-attempt log is saved at:$\r$\n$SetupLogPath$\r$\n$\r$\nOpen the log now?" IDNO +2
+    ExecShell "open" "$SetupLogPath"
+    Quit
   ${EndIf}
 SectionEnd
