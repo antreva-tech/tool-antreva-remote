@@ -12,7 +12,7 @@ if not exist "%SETUP_SCRIPT%" (
   exit /b 1
 )
 
-echo Starting Antreva Desk 1.0.1 setup...
+echo Starting Antreva Desk 1.0.2 setup...
 echo.
 
 powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "if ($PSVersionTable.PSVersion.Major -lt 3) { Write-Host 'PowerShell 5.1 or newer is required on Windows 7. PowerShell 3 or newer is required on Windows 8 through Windows 11.'; exit 10 }"
@@ -39,5 +39,5 @@ if errorlevel 1 (
 )
 
 echo.
-echo Antreva Desk 1.0.1 setup launched.
+echo Antreva Desk 1.0.2 setup launched.
 endlocal

@@ -55,6 +55,16 @@ foreach ($chainStatus in @('UntrustedRoot', 'PartialChain')) {
         -ExpectedMode 'PinnedOffline'
 }
 
+foreach ($chainStatus in @('UntrustedRoot', 'PartialChain')) {
+    Assert-Decision `
+        -Name "PowerShell 5.1 UnknownError $chainStatus payload" `
+        -SignatureStatus 'UnknownError' `
+        -ActualSignerThumbprint $ExpectedSignerThumbprint `
+        -ChainStatuses @($chainStatus) `
+        -ExpectedAllowed $true `
+        -ExpectedMode 'PinnedOffline'
+}
+
 Assert-Decision `
     -Name 'combined allowed chain flags' `
     -SignatureStatus 'NotTrusted' `
@@ -66,6 +76,14 @@ Assert-Decision `
 Assert-Decision `
     -Name 'mixed unsafe chain status' `
     -SignatureStatus 'NotTrusted' `
+    -ActualSignerThumbprint $ExpectedSignerThumbprint `
+    -ChainStatuses @('UntrustedRoot', 'NotTimeValid') `
+    -ExpectedAllowed $false `
+    -ExpectedMode 'Blocked'
+
+Assert-Decision `
+    -Name 'UnknownError with unsafe chain status' `
+    -SignatureStatus 'UnknownError' `
     -ActualSignerThumbprint $ExpectedSignerThumbprint `
     -ChainStatuses @('UntrustedRoot', 'NotTimeValid') `
     -ExpectedAllowed $false `

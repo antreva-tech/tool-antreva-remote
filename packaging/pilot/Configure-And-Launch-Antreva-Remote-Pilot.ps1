@@ -711,7 +711,7 @@ Assert-AntrevaDeskPayloadAuthenticity `
     -ExpectedSha256 $ExpectedSha256 `
     -ExpectedSignerThumbprint ([string]$PayloadMetadata.SignerThumbprint) | Out-Null
 
-Write-Output "Antreva Desk 1.0.1 Managed Access setup"
+Write-Output "Antreva Desk 1.0.2 Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."
 $plainPassword1 = Get-PermanentSupportPassword -EnvironmentVariableName $PasswordEnvironmentVariable
 if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {

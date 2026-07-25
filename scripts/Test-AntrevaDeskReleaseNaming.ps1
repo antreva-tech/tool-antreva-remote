@@ -7,12 +7,12 @@ $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyI
 $Root = Resolve-Path (Join-Path $ScriptDir '..')
 
 $expectedProduct = 'Antreva Desk'
-$expectedVersion = '1.0.1'
+$expectedVersion = '1.0.2'
 $expectedReleaseTitle = "$expectedProduct $expectedVersion"
 $expectedBundleName = "AntrevaDesk-Setup-$expectedVersion"
 $expectedInstallerName = "$expectedBundleName.exe"
 $expectedChecksumName = "$expectedBundleName.sha256.txt"
-$expectedTagName = 'antreva-desk-1.0.1'
+$expectedTagName = 'antreva-desk-1.0.2'
 $legacyInstallerName = 'AntrevaDesk-Setup-0.1.0'
 $legacyTagName = 'antreva-desk-0.1.0'
 $legacyZipName = 'Antreva-Desk-0.1.0-Windows.zip'
