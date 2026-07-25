@@ -5,7 +5,9 @@ param(
 
     [string]$PortableExe,
 
-    [string]$PasswordEnvironmentVariable
+    [string]$PasswordEnvironmentVariable,
+
+    [string]$SetupLogPath
 )
 
 $ErrorActionPreference = 'Stop'
@@ -19,11 +21,13 @@ $Payloads = @{
     x64 = @{
         FileName = 'rustdesk-1.4.8-x86_64.exe'
         Sha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
+        SignerThumbprint = '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
         Label = '64-bit'
     }
     x86 = @{
         FileName = 'rustdesk-1.4.8-x86-sciter.exe'
         Sha256 = '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7'
+        SignerThumbprint = '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
         Label = '32-bit'
     }
 }
@@ -31,8 +35,16 @@ $InstallDir = Join-Path $env:LOCALAPPDATA 'AntrevaDesk'
 $Launcher = Join-Path $InstallDir 'Launch Antreva Desk.cmd'
 $ShortcutName = 'Antreva Desk'
 $SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x86/x64'
-$SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
+if ([string]::IsNullOrWhiteSpace($SetupLogPath)) {
+    $SetupLogPath = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData)) 'AntrevaDesk\Logs\AntrevaDesk-Setup.log'
+}
 $InstallerPasswordEnvironmentVariableName = 'ANTREVA_DESK_PASSWORD'
+
+$PayloadValidationScript = Join-Path $PSScriptRoot 'AntrevaDesk-PayloadValidation.ps1'
+if (-not (Test-Path -LiteralPath $PayloadValidationScript)) {
+    throw "Missing AntrevaDesk payload validation helper: $PayloadValidationScript"
+}
+. $PayloadValidationScript
 
 $ManagedOptions = @{
     'custom-rendezvous-server' = '104.184.67.190'
@@ -108,24 +120,6 @@ function Get-PermanentSupportPassword {
     }
 
     return $plainPassword1
-}
-
-function Get-Sha256Hash {
-    param([Parameter(Mandatory = $true)][string]$Path)
-
-    $sha256 = [Security.Cryptography.SHA256]::Create()
-    $stream = [IO.File]::OpenRead($Path)
-    try {
-        $hashBytes = $sha256.ComputeHash($stream)
-        return -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
-    } finally {
-        if ($null -ne $stream) {
-            $stream.Dispose()
-        }
-        if ($null -ne $sha256) {
-            $sha256.Dispose()
-        }
-    }
 }
 
 function Test-Is64BitOperatingSystem {
@@ -280,7 +274,8 @@ function Start-ElevatedSetup {
 function Start-SetupTranscript {
     Write-Output "Setup log: $SetupLogPath"
     try {
-        Start-Transcript -LiteralPath $SetupLogPath -Append | Out-Null
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SetupLogPath) | Out-Null
+        Start-Transcript -LiteralPath $SetupLogPath -Force | Out-Null
     } catch {
         Write-Warning "Could not start setup transcript at $SetupLogPath. $($_.Exception.Message)"
     }
@@ -700,6 +695,7 @@ if (-not (Test-IsAdministrator)) {
     if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {
         $elevatedSetupArguments += @('-PasswordEnvironmentVariable', $PasswordEnvironmentVariable)
     }
+    $elevatedSetupArguments += @('-SetupLogPath', $SetupLogPath)
     Start-ElevatedSetup -ScriptArguments $elevatedSetupArguments
     exit 0
 }
@@ -710,17 +706,12 @@ if (-not (Test-Path -LiteralPath $PortableExe)) {
     throw "Missing pilot executable next to this script: $PortableExe"
 }
 
-$hash = Get-Sha256Hash -Path $PortableExe
-if ($hash -ne $ExpectedSha256) {
-    throw "Pilot executable hash mismatch. Expected $ExpectedSha256 but got $hash."
-}
+Assert-AntrevaDeskPayloadAuthenticity `
+    -Path $PortableExe `
+    -ExpectedSha256 $ExpectedSha256 `
+    -ExpectedSignerThumbprint ([string]$PayloadMetadata.SignerThumbprint) | Out-Null
 
-$signature = Get-AuthenticodeSignature -FilePath $PortableExe
-if ($signature.Status -ne 'Valid') {
-    throw "Pilot executable signature is not valid: $($signature.StatusMessage)"
-}
-
-Write-Output "Antreva Desk 1.0.0 Managed Access setup"
+Write-Output "Antreva Desk 1.0.1 Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."
 $plainPassword1 = Get-PermanentSupportPassword -EnvironmentVariableName $PasswordEnvironmentVariable
 if (-not [string]::IsNullOrWhiteSpace($PasswordEnvironmentVariable)) {

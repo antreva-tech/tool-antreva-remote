@@ -21,7 +21,7 @@ These values are stored in `config/antreva-client-policy.json`.
 For customer-style pilot testing, run:
 
 ```text
-AntrevaDesk-Setup-1.0.0.exe
+AntrevaDesk-Setup-1.0.1.exe
 ```
 
 The installer GUI will:
@@ -57,27 +57,30 @@ The script will:
 
 Use two machines on different networks if possible.
 
-1. On the client machine, run `AntrevaDesk-Setup-1.0.0.exe` during authorized
+1. On the client machine, run `AntrevaDesk-Setup-1.0.1.exe` during authorized
    onboarding.
 2. Select the recommended architecture.
-3. Enter and confirm the permanent support password in the installer.
-4. Approve the Windows administrator elevation prompt if Windows asks for it.
-5. Write down the client RustDesk ID shown in the app.
-6. On the technician machine, run Antreva Remote/RustDesk configured for the
+3. If Windows cannot retrieve the publisher certificate chain, confirm the
+   setup log records an offline-safe validation warning and installation
+   continues only for the pinned payload hash and publisher certificate.
+4. Enter and confirm the permanent support password in the installer.
+5. Approve the Windows administrator elevation prompt if Windows asks for it.
+6. Write down the client RustDesk ID shown in the app.
+7. On the technician machine, run Antreva Remote/RustDesk configured for the
    Antreva server.
-7. Enter the client ID from the technician machine and connect.
-8. Authenticate using the permanent support password.
-9. Verify remote control:
+8. Enter the client ID from the technician machine and connect.
+9. Authenticate using the permanent support password.
+10. Verify remote control:
    - move the mouse;
    - type into Notepad;
    - switch windows;
    - disconnect cleanly.
-10. Verify file transfer:
+11. Verify file transfer:
    - send a small file from technician to client;
    - send a small file from client to technician;
    - cancel one transfer mid-way;
    - test a larger file if bandwidth allows.
-11. Confirm the tray/app remains visible on the client machine.
+12. Confirm the tray/app remains visible on the client machine.
 
 Repeat this flow on Windows 7 SP1 x64, Windows 8 x64, Windows 8.1 x64,
 Windows 10 x64, Windows 7 SP1 x86, Windows 8 x86, Windows 8.1 x86, Windows 10

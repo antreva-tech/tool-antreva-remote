@@ -5,6 +5,7 @@ param(
     [ValidateSet('auto', 'x86', 'x64')]
     [string]$Architecture = 'auto',
     [string]$PortableExe,
+    [string]$SetupLogPath,
     [switch]$LaunchAfterConfigure
 )
 
@@ -30,16 +31,26 @@ $Payloads = @{
     x64 = @{
         FileName = 'rustdesk-1.4.8-x86_64.exe'
         Sha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
+        SignerThumbprint = '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
         Label = '64-bit'
     }
     x86 = @{
         FileName = 'rustdesk-1.4.8-x86-sciter.exe'
         Sha256 = '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7'
+        SignerThumbprint = '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
         Label = '32-bit'
     }
 }
 $SupportedWindowsLabel = 'Windows 7 SP1 through Windows 11 x86/x64'
-$SetupLogPath = Join-Path ([IO.Path]::GetTempPath()) 'AntrevaDesk-Setup.log'
+if ([string]::IsNullOrWhiteSpace($SetupLogPath)) {
+    $SetupLogPath = Join-Path ([Environment]::GetFolderPath([Environment+SpecialFolder]::CommonApplicationData)) 'AntrevaDesk\Logs\AntrevaDesk-Setup.log'
+}
+
+$PayloadValidationScript = Join-Path $Root 'packaging\pilot\AntrevaDesk-PayloadValidation.ps1'
+if (-not (Test-Path -LiteralPath $PayloadValidationScript)) {
+    throw "Missing AntrevaDesk payload validation helper: $PayloadValidationScript"
+}
+. $PayloadValidationScript
 
 function Test-IsAdministrator {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
@@ -56,24 +67,6 @@ function ConvertFrom-SecureStringForProcess {
     } finally {
         if ($bstr -ne [IntPtr]::Zero) {
             [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr)
-        }
-    }
-}
-
-function Get-Sha256Hash {
-    param([Parameter(Mandatory = $true)][string]$Path)
-
-    $sha256 = [Security.Cryptography.SHA256]::Create()
-    $stream = [IO.File]::OpenRead($Path)
-    try {
-        $hashBytes = $sha256.ComputeHash($stream)
-        return -join ($hashBytes | ForEach-Object { $_.ToString('x2') })
-    } finally {
-        if ($null -ne $stream) {
-            $stream.Dispose()
-        }
-        if ($null -ne $sha256) {
-            $sha256.Dispose()
         }
     }
 }
@@ -224,7 +217,8 @@ function Start-ElevatedSetup {
 function Start-SetupTranscript {
     Write-Output "Setup log: $SetupLogPath"
     try {
-        Start-Transcript -LiteralPath $SetupLogPath -Append | Out-Null
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $SetupLogPath) | Out-Null
+        Start-Transcript -LiteralPath $SetupLogPath -Force | Out-Null
     } catch {
         Write-Warning "Could not start setup transcript at $SetupLogPath. $($_.Exception.Message)"
     }
@@ -445,23 +439,14 @@ if (-not (Test-Path -LiteralPath $PortableExe)) {
     Invoke-WebRequest -Uri $DownloadUrl -OutFile $PortableExe
 }
 
-$hash = Get-Sha256Hash -Path $PortableExe
-if ($hash -ne $ExpectedSha256) {
-    throw "RustDesk download hash mismatch. Expected $ExpectedSha256 but got $hash."
-}
-
-$signature = Get-AuthenticodeSignature -FilePath $PortableExe
-if ($signature.Status -ne 'Valid') {
-    throw "RustDesk Authenticode signature is not valid: $($signature.StatusMessage)"
-}
-
 if (-not (Test-IsAdministrator)) {
     Write-Output "Managed Access setup requires elevation. Relaunching this script as Administrator..."
     $elevatedArgs = @(
         '-PolicyPath', $PolicyPath,
         '-ArtifactsDir', $ArtifactsDir,
         '-Architecture', $SelectedArchitecture,
-        '-PortableExe', $PortableExe
+        '-PortableExe', $PortableExe,
+        '-SetupLogPath', $SetupLogPath
     )
     if ($LaunchAfterConfigure) {
         $elevatedArgs += '-LaunchAfterConfigure'
@@ -471,6 +456,11 @@ if (-not (Test-IsAdministrator)) {
 }
 
 Start-SetupTranscript
+
+Assert-AntrevaDeskPayloadAuthenticity `
+    -Path $PortableExe `
+    -ExpectedSha256 $ExpectedSha256 `
+    -ExpectedSignerThumbprint ([string]$PayloadMetadata.SignerThumbprint) | Out-Null
 
 Write-Output "Antreva Remote Managed Access setup"
 Write-Output "This will install the support service and configure permanent-password access."

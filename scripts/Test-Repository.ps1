@@ -14,6 +14,7 @@ try {
     & (Join-Path $ScriptDir 'Test-AntrevaDeskReleaseNaming.ps1') | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskWindowsSupport.ps1') | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskCustomServerInstall.ps1') | Out-Null
+    & (Join-Path $ScriptDir 'Test-AntrevaDeskPayloadValidation.ps1') | Out-Null
 
     $required = @(
         'README.md',
@@ -26,6 +27,8 @@ try {
         'scripts\Test-AntrevaDeskReleaseNaming.ps1',
         'scripts\Test-AntrevaDeskWindowsSupport.ps1',
         'scripts\Test-AntrevaDeskCustomServerInstall.ps1',
+        'scripts\Test-AntrevaDeskPayloadValidation.ps1',
+        'packaging\pilot\AntrevaDesk-PayloadValidation.ps1',
         'scripts\Build-WindowsRelease.ps1'
     )
 

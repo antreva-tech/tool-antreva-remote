@@ -72,6 +72,7 @@ $releaseChecklist = Read-RepoFile 'docs\compliance\RELEASE-CHECKLIST.md'
 $setupCmd = Read-RepoFile 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd'
 $setupScript = Read-RepoFile 'packaging\pilot\Configure-And-Launch-Antreva-Remote-Pilot.ps1'
 $repoSetupScript = Read-RepoFile 'scripts\Setup-WindowsPilot.ps1'
+$payloadValidation = Read-RepoFile 'packaging\pilot\AntrevaDesk-PayloadValidation.ps1'
 $bundleScript = Read-RepoFile 'scripts\Build-PilotBundle.ps1'
 $workflow = Read-RepoFile '.github\workflows\build-and-release-installers.yml'
 $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'
@@ -100,12 +101,18 @@ foreach ($expected in @('-Architecture', 'Get-RustDeskPayloadMetadata', 'rustdes
 }
 
 Assert-Contains -Name 'repo-root pilot PowerShell preflight' -Text $repoSetupScript -Expected 'PowerShell 5.1 or newer is required'
-Assert-Contains -Name 'repo-root pilot legacy hash support' -Text $repoSetupScript -Expected 'Get-Sha256Hash'
+Assert-Contains -Name 'shared legacy hash support' -Text $payloadValidation -Expected 'Get-AntrevaDeskSha256Hash'
 Assert-Contains -Name 'repo-root pilot TLS support' -Text $repoSetupScript -Expected 'Tls12'
 
 Assert-Contains -Name 'pilot bundle RustDesk version' -Text $bundleScript -Expected '$RustDeskVersion = ''1.4.8'''
 foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.exe', '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7')) {
     Assert-Contains -Name 'pilot bundle architecture payloads' -Text $bundleScript -Expected $expected
+}
+foreach ($expected in @('AntrevaDesk-PayloadValidation.ps1', '$SetupStageDir')) {
+    Assert-Contains -Name 'pilot bundle payload validation helper' -Text $bundleScript -Expected $expected
+}
+foreach ($expected in @('Get-AntrevaDeskSignatureDecision', 'Assert-AntrevaDeskPayloadAuthenticity', 'UntrustedRoot', 'PartialChain', 'PinnedOffline')) {
+    Assert-Contains -Name 'offline-safe payload validation' -Text $payloadValidation -Expected $expected
 }
 foreach ($expected in @('AntrevaDesk ArchitecturePage', 'ARCH_X64', 'ARCH_X86', 'RunningX64', '-Architecture', '-PortableExe')) {
     Assert-Contains -Name 'NSIS architecture selection' -Text $nsisScript -Expected $expected
@@ -115,6 +122,10 @@ Assert-BitmapDimensions -Name 'NSIS welcome side logo' -Path 'packaging\antrevad
 foreach ($expected in @('RequestExecutionLevel admin', 'AntrevaDesk PasswordPage', 'PASSWORD_ONE', 'PASSWORD_TWO', 'Permanent support password', 'nsExec::ExecToLog', 'SetEnvironmentVariable', 'ANTREVA_DESK_PASSWORD', '-PasswordEnvironmentVariable', '-NonInteractive')) {
     Assert-Contains -Name 'NSIS GUI-only managed setup' -Text $nsisScript -Expected $expected
 }
+foreach ($expected in @('ReadEnvStr $SetupLogPath "ProgramData"', '-SetupLogPath "$SetupLogPath"', 'ExecShell "open" "$SetupLogPath"', 'Quit', 'installed and configured successfully')) {
+    Assert-Contains -Name 'NSIS actionable failure logging' -Text $nsisScript -Expected $expected
+}
+Assert-NotContains -Name 'NSIS false-success finish text' -Text $nsisScript -Unexpected 'If setup reported an error'
 Assert-NotContains -Name 'NSIS visible PowerShell execution' -Text $nsisScript -Unexpected 'ExecWait ''"powershell.exe"'
 foreach ($expected in @('-PasswordEnvironmentVariable', 'Get-PermanentSupportPassword', 'ANTREVA_DESK_PASSWORD')) {
     Assert-Contains -Name 'PowerShell installer-driven password support' -Text $setupScript -Expected $expected

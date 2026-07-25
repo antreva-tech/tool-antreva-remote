@@ -21,7 +21,7 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
 }
 
 $RustDeskVersion = '1.4.8'
-$AntrevaDeskVersion = '1.0.0'
+$AntrevaDeskVersion = '1.0.1'
 $InstallerName = "AntrevaDesk-Setup-$AntrevaDeskVersion"
 $InstallerPath = Join-Path $OutputDir "$InstallerName.exe"
 $ChecksumPath = Join-Path $OutputDir "$InstallerName.sha256.txt"
@@ -99,6 +99,7 @@ Remove-Item -LiteralPath $ChecksumPath -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $SetupStageDir | Out-Null
 
 Copy-Item -LiteralPath (Join-Path $Root 'packaging\pilot\Configure-And-Launch-Antreva-Remote-Pilot.ps1') -Destination $SetupStageDir
+Copy-Item -LiteralPath (Join-Path $Root 'packaging\pilot\AntrevaDesk-PayloadValidation.ps1') -Destination $SetupStageDir
 
 foreach ($entry in $Payloads.GetEnumerator()) {
     $arch = [string]$entry.Key
