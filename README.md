@@ -73,10 +73,10 @@ on pushes to `main`.
 
 - Pull requests upload a 30-day workflow artifact for review/testing.
 - Pushes to `main` publish the EXE and SHA-256 file to the GitHub Release named
-  `Antreva Desk 1.0.1`.
+  `Antreva Desk 1.0.2`.
 
-The release tag is `antreva-desk-1.0.1`, and the installer is
-`AntrevaDesk-Setup-1.0.1.exe`.
+The release tag is `antreva-desk-1.0.2`, and the installer is
+`AntrevaDesk-Setup-1.0.2.exe`.
 
 ## License
 

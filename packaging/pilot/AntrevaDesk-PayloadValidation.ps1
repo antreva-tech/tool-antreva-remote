@@ -48,7 +48,7 @@ function Get-AntrevaDeskSignatureDecision {
         }
     }
 
-    if ($SignatureStatus -ne 'NotTrusted') {
+    if (@('NotTrusted', 'UnknownError') -notcontains $SignatureStatus) {
         return [pscustomobject]@{
             Allowed = $false
             Mode = 'Blocked'
@@ -129,7 +129,7 @@ function Assert-AntrevaDeskPayloadAuthenticity {
         ''
     }
     $chainStatuses = @()
-    if ($signatureStatus -eq 'NotTrusted' -and $null -ne $signature.SignerCertificate) {
+    if (@('NotTrusted', 'UnknownError') -contains $signatureStatus -and $null -ne $signature.SignerCertificate) {
         $chainStatuses = Get-AntrevaDeskCertificateChainStatuses -SignerCertificate $signature.SignerCertificate
     }
 

@@ -40,10 +40,10 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: AntrevaDesk-Setup-1.0.1
+          name: AntrevaDesk-Setup-1.0.2
           path: |
-            artifacts/AntrevaDesk-Setup-1.0.1.exe
-            artifacts/AntrevaDesk-Setup-1.0.1.sha256.txt
+            artifacts/AntrevaDesk-Setup-1.0.2.exe
+            artifacts/AntrevaDesk-Setup-1.0.2.sha256.txt
           if-no-files-found: error
           retention-days: 30
 
@@ -62,28 +62,28 @@ jobs:
       - name: Download installer artifact
         uses: actions/download-artifact@v4
         with:
-          name: AntrevaDesk-Setup-1.0.1
+          name: AntrevaDesk-Setup-1.0.2
           path: release-assets
 
       - name: Write release notes
         shell: bash
         run: |
           {
-            echo "Antreva Desk 1.0.1 managed-access GUI installer."
+            echo "Antreva Desk 1.0.2 managed-access GUI installer."
             echo "Supports Windows 7 SP1 through Windows 11 x86/x64 with installer architecture selection. Windows 7 requires WMF 5.1, KB4490628, and KB4474419 before setup."
-            echo "Fixes client installation failures when a restricted or offline Windows trust store cannot build the bundled RustDesk publisher chain, while retaining pinned hash and publisher validation."
+            echo "Fixes PowerShell 5.1 clients that report a missing-root RustDesk publisher chain as UnknownError, while retaining pinned hash, publisher, and independent chain-status validation."
             echo
             echo "Built from commit: \`${GITHUB_SHA}\`"
             echo
-            echo "Download AntrevaDesk-Setup-1.0.1.exe and verify it with the attached SHA256 file."
+            echo "Download AntrevaDesk-Setup-1.0.2.exe and verify it with the attached SHA256 file."
           } > release-notes.md
 
       - name: Publish latest release
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
-          TAG_NAME: antreva-desk-1.0.1
-          RELEASE_TITLE: Antreva Desk 1.0.1
+          TAG_NAME: antreva-desk-1.0.2
+          RELEASE_TITLE: Antreva Desk 1.0.2
         run: |
           set -euo pipefail
 

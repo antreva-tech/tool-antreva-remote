@@ -111,7 +111,7 @@ foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.
 foreach ($expected in @('AntrevaDesk-PayloadValidation.ps1', '$SetupStageDir')) {
     Assert-Contains -Name 'pilot bundle payload validation helper' -Text $bundleScript -Expected $expected
 }
-foreach ($expected in @('Get-AntrevaDeskSignatureDecision', 'Assert-AntrevaDeskPayloadAuthenticity', 'UntrustedRoot', 'PartialChain', 'PinnedOffline')) {
+foreach ($expected in @('Get-AntrevaDeskSignatureDecision', 'Assert-AntrevaDeskPayloadAuthenticity', 'UntrustedRoot', 'PartialChain', 'UnknownError', 'PinnedOffline')) {
     Assert-Contains -Name 'offline-safe payload validation' -Text $payloadValidation -Expected $expected
 }
 foreach ($expected in @('AntrevaDesk ArchitecturePage', 'ARCH_X64', 'ARCH_X86', 'RunningX64', '-Architecture', '-PortableExe')) {

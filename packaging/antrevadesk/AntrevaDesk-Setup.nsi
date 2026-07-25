@@ -7,7 +7,7 @@ Unicode true
 !include "WinMessages.nsh"
 
 !ifndef OUTFILE
-  !define OUTFILE "AntrevaDesk-Setup-1.0.1.exe"
+  !define OUTFILE "AntrevaDesk-Setup-1.0.2.exe"
 !endif
 
 Name "AntrevaDesk"
