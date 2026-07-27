@@ -19,7 +19,6 @@ $legacyBundleName = 'Antreva-Remote-Pilot-RustDesk-1.4.8'
 
 $workflow = Get-Content -LiteralPath (Join-Path $Root '.github\workflows\build-and-release-installers.yml') -Raw
 $buildScript = Get-Content -LiteralPath (Join-Path $Root 'scripts\Build-PilotBundle.ps1') -Raw
-$setupScript = Get-Content -LiteralPath (Join-Path $Root 'packaging\pilot\Configure-And-Launch-Antreva-Remote-Pilot.ps1') -Raw
 $setupCmd = Get-Content -LiteralPath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd') -Raw
 $readme = Get-Content -LiteralPath (Join-Path $Root 'packaging\pilot\README.md') -Raw
 $policy = Get-Content -LiteralPath (Join-Path $Root 'config\antreva-client-policy.json') -Raw | ConvertFrom-Json
@@ -32,8 +31,8 @@ $checks = @(
     @{ Name = 'workflow release tag'; Passed = $workflow.Contains("TAG_NAME: $expectedTagName") },
     @{ Name = 'build script bundle name'; Passed = $buildScript.Contains('$BundleName = "Antreva-Desk-$AntrevaDeskVersion-Windows"') },
     @{ Name = 'build script zip output'; Passed = $buildScript.Contains('$ZipPath = Join-Path $OutputDir "$BundleName.zip"') },
-    @{ Name = 'setup script product name'; Passed = $setupScript.Contains("$expectedReleaseTitle Managed Access setup") },
-    @{ Name = 'setup command launch text'; Passed = $setupCmd.Contains("Starting $expectedReleaseTitle setup...") },
+    @{ Name = 'setup command version'; Passed = $setupCmd.Contains("set `"ANTREVA_VERSION=$expectedVersion`"") },
+    @{ Name = 'setup command product'; Passed = $setupCmd.Contains('Antreva Desk %ANTREVA_VERSION% Command Prompt setup') },
     @{ Name = 'pilot README title'; Passed = $readme.Contains("# $expectedReleaseTitle Managed Access") },
     @{ Name = 'policy product name'; Passed = $policy.productName -eq $expectedProduct }
 )

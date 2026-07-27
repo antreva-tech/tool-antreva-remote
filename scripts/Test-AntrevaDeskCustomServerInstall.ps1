@@ -41,56 +41,55 @@ function Assert-NotContains {
     }
 }
 
-$packagedSetup = Read-RepoFile 'packaging\pilot\Configure-And-Launch-Antreva-Remote-Pilot.ps1'
-$repoSetup = Read-RepoFile 'scripts\Setup-WindowsPilot.ps1'
-$applyPolicy = Read-RepoFile 'scripts\Apply-AntrevaClientPolicy.ps1'
+$packagedSetup = Read-RepoFile 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd'
 $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'
+$policy = Get-Content -LiteralPath (Join-Path $Root 'config\antreva-client-policy.json') -Raw | ConvertFrom-Json
 
-foreach ($script in @($packagedSetup, $repoSetup)) {
-    Assert-Contains -Name 'installer finalization wait' -Text $script -Expected '$installCompletionDeadline'
-    Assert-Contains -Name 'installer finalization message' -Text $script -Expected 'Waiting for RustDesk installer finalization'
-    Assert-Contains -Name 'elevated setup wrapper' -Text $script -Expected 'Start-ElevatedSetup'
-    Assert-Contains -Name 'setup transcript log' -Text $script -Expected 'AntrevaDesk-Setup.log'
-    Assert-Contains -Name 'stable machine-wide setup log' -Text $script -Expected '[Environment+SpecialFolder]::CommonApplicationData'
-    Assert-Contains -Name 'current-attempt transcript overwrite' -Text $script -Expected 'Start-Transcript -LiteralPath $SetupLogPath -Force'
-    Assert-Contains -Name 'elevated failure pause' -Text $script -Expected 'Press any key to close this window'
-    Assert-Contains -Name 'elevated failure exit code' -Text $script -Expected 'Antreva Desk setup failed with exit code'
+foreach ($expected in @(
+    'INSTALL_WAIT_COUNT',
+    'Waiting for installer finalization',
+    'ShellExecute WScript.Arguments',
+    '--elevated',
+    'AntrevaDesk-Setup.log',
+    '%ProgramData%\AntrevaDesk\Logs',
+    'Setup did not finish successfully',
+    'RustDesk.toml',
+    '^[ ]*password[ ]*=',
+    '^[ ]*salt[ ]*='
+)) {
+    Assert-Contains -Name 'Command Prompt setup reliability gate' -Text $packagedSetup -Expected $expected
 }
 
-foreach ($script in @($packagedSetup, $repoSetup, $applyPolicy)) {
-    Assert-Contains -Name 'RustDesk GUI CLI nullable exit code handling' -Text $script -Expected '$null -ne $LASTEXITCODE -and $LASTEXITCODE -ne 0'
-}
-
-foreach ($script in @($packagedSetup, $repoSetup)) {
-    Assert-Contains -Name 'permanent password config path helper' -Text $script -Expected 'Get-RustDeskMainConfigPath'
-    Assert-Contains -Name 'permanent password config parser' -Text $script -Expected 'Read-RustDeskMainConfig'
-    Assert-Contains -Name 'permanent password persisted state assertion' -Text $script -Expected 'Assert-RustDeskPermanentPasswordState'
-    Assert-Contains -Name 'permanent password persisted config file' -Text $script -Expected 'RustDesk.toml'
-    Assert-NotContains -Name 'permanent password stdout Done requirement' -Text $script -Unexpected "text -notmatch 'Done!'"
-}
-
-foreach ($expected in @('Import-RustDeskCustomServerConfig', '--config', '$RustDeskConfigName', 'rustdesk-host=$($ManagedOptions')) {
+foreach ($expected in @('--config', '%RUSTDESK_CONFIG_NAME%', 'rustdesk-host=%SERVER_HOST%', '--option "%~1"', 'VerifyRustDeskOption')) {
     Assert-Contains -Name 'packaged custom server import' -Text $packagedSetup -Expected $expected
 }
 
-foreach ($script in @($packagedSetup, $applyPolicy)) {
-    Assert-Contains -Name 'custom server config path helper' -Text $script -Expected 'Get-RustDeskConfigPath'
-    Assert-Contains -Name 'custom server config parser' -Text $script -Expected 'Read-RustDeskConfigOptions'
-    Assert-Contains -Name 'custom server config assertion helper' -Text $script -Expected 'Assert-RustDeskConfigOption'
-    Assert-Contains -Name 'custom server relay fallback helper' -Text $script -Expected 'Assert-RustDeskRelayOption'
-    Assert-Contains -Name 'custom server blank relay same-host fallback' -Text $script -Expected 'Test-RustDeskBlankRelayUsesCustomServerFallback'
-    Assert-Contains -Name 'custom server relay fallback message' -Text $script -Expected 'relay-server is using the custom rendezvous server fallback'
-    Assert-Contains -Name 'custom server persisted config file' -Text $script -Expected 'RustDesk2.toml'
-    Assert-Contains -Name 'custom server options section parser' -Text $script -Expected "-eq 'options'"
-    Assert-Contains -Name 'custom rendezvous persisted config verification' -Text $script -Expected 'custom-rendezvous-server'
-    Assert-Contains -Name 'relay persisted config verification' -Text $script -Expected 'relay-server'
-    Assert-Contains -Name 'key persisted config verification' -Text $script -Expected 'Assert-RustDeskConfigOption'
-    Assert-Contains -Name 'custom server-only persisted config verification' -Text $script -Expected 'Assert-RustDeskServerOptions'
-    Assert-NotContains -Name 'custom server verification via CLI readback' -Text $script -Unexpected 'Get-RustDeskOption -RustDeskExe $RustDeskExe -Name $Name'
-    Assert-NotContains -Name 'custom server strict relay TOML requirement' -Text $script -Unexpected "Assert-RustDeskConfigOption -ConfigOptions `$configOptions -ConfigPath `$configPath -Name 'relay-server'"
+foreach ($expected in @(
+    'RustDesk2.toml',
+    'FindRustDeskConfig',
+    'VerifyConfigLine',
+    '"custom-rendezvous-server" "%SERVER_HOST%" "required"',
+    '"relay-server" "%SERVER_HOST%" "allow-blank"',
+    '"key" "%SERVER_KEY%" "required"',
+    'does not contain the required'
+)) {
+    Assert-Contains -Name 'persisted custom server verification' -Text $packagedSetup -Expected $expected
 }
 
-Assert-NotContains -Name 'packaged all-option verification' -Text $packagedSetup -Unexpected 'Assert-RustDeskManagedOptions'
+foreach ($property in $policy.rustdeskOptions.PSObject.Properties) {
+    $expectedValue = switch ($property.Name) {
+        'custom-rendezvous-server' { '%SERVER_HOST%' }
+        'relay-server' { '%SERVER_HOST%' }
+        'key' { '%SERVER_KEY%' }
+        default { [string]$property.Value }
+    }
+    $expectedCommand = "call :SetRustDeskOption `"$($property.Name)`" `"$expectedValue`""
+    Assert-Contains -Name "managed option $($property.Name)" -Text $packagedSetup -Expected $expectedCommand
+}
+
+foreach ($unexpected in @('powershell.exe', '.ps1', 'manual server')) {
+    Assert-NotContains -Name 'zero-PowerShell configured install' -Text $packagedSetup -Unexpected $unexpected
+}
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskCustomServerInstall.ps1'
 Assert-Contains -Name 'payload validation test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskPayloadValidation.ps1'
 
