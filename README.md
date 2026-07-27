@@ -70,23 +70,29 @@ PowerShell.
 
 ## Installer Downloads
 
-GitHub Actions builds the Antreva Desk Command Prompt installer bundle on pull
-requests to `main` and on pushes to `main`.
+GitHub Actions builds the Antreva Desk 1.0.4 Command Prompt installer bundle
+on pull requests to `main` and on pushes to `main`.
 
-- Pull requests upload a 30-day workflow artifact for review/testing.
-- Pushes to `main` publish the ZIP and SHA-256 file to the GitHub Release named
-  `Antreva Desk 1.0.3`.
+- Pull requests and pushes upload 30-day workflow artifacts for controlled
+  review and testing only.
+- Ordinary `main` pushes never create, replace, or move a public release tag.
+- Public publication is available only through the protected manual release
+  workflow after Antreva signer verification and hashed Windows certification
+  evidence pass.
 
 Before upload, CI runs the bundled installer with `--verify-bundle`. This is a
 non-installing integrity check that validates architecture selection, the exact
-pinned payload SHA-256, and the elevation helper. It intentionally skips the
+pinned payload SHA-256, and the WSH helpers. It intentionally skips the
 client operating-system preflight so it can run on GitHub's Windows Server
 runner. Running the installer normally still performs the full Windows client
 preflight and rejects Windows Server editions.
 
-The release tag is `antreva-desk-1.0.3`, and the installer bundle is
-`Antreva-Desk-1.0.3-Windows.zip`. Extract the ZIP and double-click
-`Antreva-Remote-Pilot-Setup.cmd` during authorized onboarding.
+The test bundle is `Antreva-Desk-1.0.4-Windows.zip`. A public release may use
+the immutable tag `antreva-desk-1.0.4` only after the manual gates pass.
+Extract the ZIP and double-click `Antreva-Remote-Pilot-Setup.cmd` during
+authorized onboarding. Alternate administrator credentials are supported:
+machine-wide setup runs elevated, while the original user waits for the result
+and launches the app without elevation.
 
 ## License
 

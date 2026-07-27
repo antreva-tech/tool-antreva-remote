@@ -1,0 +1,542 @@
+@echo off
+setlocal EnableExtensions DisableDelayedExpansion
+
+set "ANTREVA_VERSION=@@ANTREVA_VERSION@@"
+set "RUSTDESK_VERSION=1.4.8"
+set "SCRIPT_DIR=%~dp0"
+set "SERVER_HOST=@@SERVER_HOST@@"
+set "RELAY_HOST=@@RELAY_HOST@@"
+set "SERVER_KEY=@@SERVER_KEY@@"
+set "RUSTDESK_CONFIG_NAME=rustdesk-host=%SERVER_HOST%,key=%SERVER_KEY%,relay=%RELAY_HOST%.exe"
+set "LOG_ENABLED=0"
+set "LAST_ERROR=Setup did not finish successfully."
+
+if /I "%~1"=="--verify-bundle" goto verify_bundle
+if /I "%~1"=="--elevated" goto elevated
+
+:parent
+echo Antreva Desk %ANTREVA_VERSION% managed-access setup
+echo.
+call :SelectArchitecture
+if errorlevel 1 goto parent_fail
+call :PreflightWindows
+if errorlevel 1 goto parent_fail
+call :VerifyPayloadHash
+if errorlevel 1 goto parent_fail
+call :VerifyHelpers
+if errorlevel 1 goto parent_fail
+
+fltmc.exe >nul 2>&1
+if not errorlevel 1 (
+  set "DIRECT_ELEVATED=Y"
+  set "RUN_ID=%RANDOM%-%RANDOM%-%RANDOM%"
+  goto elevated
+)
+
+set "RUN_ID=%RANDOM%-%RANDOM%-%RANDOM%"
+set "RUN_DIR=%ProgramData%\AntrevaDesk\Runs"
+set "RESULT_PATH=%RUN_DIR%\%RUN_ID%.result"
+if not exist "%RUN_DIR%" mkdir "%RUN_DIR%" >nul 2>&1
+del /q "%RESULT_PATH%" >nul 2>&1
+
+echo Setup requires administrator permission for the machine-wide service.
+echo The original user session will wait here and launch Antreva Desk when setup completes.
+cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-Elevate.vbs" "%ComSpec%" "%~f0" "%SCRIPT_DIR%" "%RUN_ID%" "%RESULT_PATH%"
+if errorlevel 1 goto elevation_failed
+
+set /a RESULT_WAIT=0
+:wait_for_result
+if exist "%RESULT_PATH%" goto read_result
+set /a RESULT_WAIT+=1
+if %RESULT_WAIT% GEQ 360 goto result_timeout
+timeout.exe /t 1 /nobreak >nul
+goto wait_for_result
+
+:read_result
+timeout.exe /t 1 /nobreak >nul
+set "RESULT_STATUS="
+set "RESULT_MESSAGE="
+set "INSTALLED_EXE="
+for /f "usebackq tokens=1,* delims==" %%A in ("%RESULT_PATH%") do (
+  if /I "%%A"=="STATUS" set "RESULT_STATUS=%%B"
+  if /I "%%A"=="MESSAGE" set "RESULT_MESSAGE=%%B"
+  if /I "%%A"=="INSTALLED_EXE" set "INSTALLED_EXE=%%B"
+)
+del /q "%RESULT_PATH%" >nul 2>&1
+if /I not "%RESULT_STATUS%"=="SUCCESS" goto child_failed
+if not exist "%INSTALLED_EXE%" goto launch_failed
+
+echo.
+echo Antreva Desk setup completed successfully.
+echo Launching Antreva Desk for the original signed-in user.
+start "" "%INSTALLED_EXE%"
+echo Log file: %ProgramData%\AntrevaDesk\Logs\AntrevaDesk-Setup.log
+pause
+exit /b 0
+
+:child_failed
+echo.
+echo ERROR: %RESULT_MESSAGE%
+echo Log file: %ProgramData%\AntrevaDesk\Logs\AntrevaDesk-Setup.log
+pause
+exit /b 1
+
+:elevation_failed
+echo.
+echo ERROR: Windows administrator approval was not completed.
+pause
+exit /b 1
+
+:result_timeout
+echo.
+echo ERROR: Timed out waiting for the administrator setup process.
+echo Log file: %ProgramData%\AntrevaDesk\Logs\AntrevaDesk-Setup.log
+pause
+exit /b 1
+
+:launch_failed
+echo.
+echo ERROR: Setup succeeded, but the installed RustDesk executable could not be launched.
+pause
+exit /b 1
+
+:parent_fail
+echo.
+echo ERROR: %LAST_ERROR%
+pause
+exit /b 1
+
+:elevated
+if not defined RUN_ID set "RUN_ID=%~2"
+fltmc.exe >nul 2>&1
+if errorlevel 1 (
+  echo ERROR: Antreva Desk setup must be run as Administrator.
+  exit /b 1
+)
+
+set "RUN_DIR=%ProgramData%\AntrevaDesk\Runs"
+set "RESULT_PATH=%RUN_DIR%\%RUN_ID%.result"
+set "LOG_DIR=%ProgramData%\AntrevaDesk\Logs"
+set "LOG_PATH=%LOG_DIR%\AntrevaDesk-Setup.log"
+if not exist "%RUN_DIR%" mkdir "%RUN_DIR%" >nul 2>&1
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" >nul 2>&1
+> "%LOG_PATH%" echo Antreva Desk %ANTREVA_VERSION% Command Prompt setup
+set "LOG_ENABLED=1"
+
+call :RunSetup
+set "SETUP_EXIT=%ERRORLEVEL%"
+if not "%SETUP_EXIT%"=="0" (
+  call :Log "Setup did not finish successfully."
+  call :WriteResult "FAILED" "%LAST_ERROR%"
+  exit /b %SETUP_EXIT%
+)
+
+call :Log "Antreva Desk %ANTREVA_VERSION% setup completed successfully."
+if /I "%DIRECT_ELEVATED%"=="Y" (
+  echo.
+  echo Antreva Desk setup completed successfully.
+  echo Launching through the interactive Windows shell.
+  explorer.exe "%INSTALLED_EXE%"
+  echo Log file: %LOG_PATH%
+  pause
+  exit /b 0
+)
+call :WriteResult "SUCCESS" "Setup completed successfully."
+exit /b 0
+
+:verify_bundle
+echo Verifying Antreva Desk %ANTREVA_VERSION% Command Prompt bundle...
+call :SelectArchitecture
+if errorlevel 1 exit /b 1
+call :VerifyPayloadHash
+if errorlevel 1 exit /b 1
+call :VerifyHelpers
+if errorlevel 1 exit /b 1
+echo Non-installing Command Prompt bundle verification passed for %SELECTED_ARCH%.
+exit /b 0
+
+:RunSetup
+call :Log "Starting Antreva Desk %ANTREVA_VERSION% machine-wide setup."
+call :SelectArchitecture
+if errorlevel 1 exit /b 1
+call :PreflightWindows
+if errorlevel 1 exit /b 1
+call :VerifyPayloadHash
+if errorlevel 1 exit /b 1
+call :VerifyHelpers
+if errorlevel 1 exit /b 1
+call :PromptForPassword
+if errorlevel 1 exit /b 1
+call :InstallRustDesk
+if errorlevel 1 exit /b 1
+call :ConfigureRustDesk
+if errorlevel 1 exit /b 1
+call :SetPermanentPassword
+if errorlevel 1 exit /b 1
+call :VerifyPersistedState
+if errorlevel 1 exit /b 1
+call :CreateAntrevaShortcuts
+if errorlevel 1 exit /b 1
+exit /b 0
+
+:SelectArchitecture
+set "SELECTED_ARCH="
+if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" (
+  call :Fail "Windows ARM64 is not certified for this release."
+  exit /b 1
+)
+if /I "%PROCESSOR_ARCHITEW6432%"=="ARM64" (
+  call :Fail "Windows ARM64 is not certified for this release."
+  exit /b 1
+)
+if /I "%PROCESSOR_ARCHITECTURE%"=="AMD64" set "SELECTED_ARCH=x64"
+if /I "%PROCESSOR_ARCHITEW6432%"=="AMD64" set "SELECTED_ARCH=x64"
+if /I "%PROCESSOR_ARCHITECTURE%"=="x86" if not defined SELECTED_ARCH set "SELECTED_ARCH=x86"
+if not defined SELECTED_ARCH (
+  call :Fail "Could not determine whether Windows is 32-bit or 64-bit."
+  exit /b 1
+)
+
+if "%SELECTED_ARCH%"=="x64" (
+  set "PAYLOAD_FILE=rustdesk-1.4.8-x86_64.exe"
+  set "PAYLOAD_HASH=@@X64_PAYLOAD_HASH@@"
+) else (
+  set "PAYLOAD_FILE=rustdesk-1.4.8-x86-sciter.exe"
+  set "PAYLOAD_HASH=@@X86_PAYLOAD_HASH@@"
+)
+set "PAYLOAD_PATH=%SCRIPT_DIR%payloads\%SELECTED_ARCH%\%PAYLOAD_FILE%"
+if not exist "%PAYLOAD_PATH%" (
+  call :Fail "The required %SELECTED_ARCH% RustDesk payload is missing."
+  exit /b 1
+)
+call :Log "Selected the %SELECTED_ARCH% RustDesk payload."
+exit /b 0
+
+:PreflightWindows
+set "WINDOWS_BUILD="
+set "WINDOWS_PRODUCT_TYPE="
+for /f "tokens=2,*" %%A in ('reg.exe query "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" /v CurrentBuildNumber 2^>nul ^| find.exe /I "CurrentBuildNumber"') do set "WINDOWS_BUILD=%%B"
+for /f "tokens=2,*" %%A in ('reg.exe query "HKLM\SYSTEM\CurrentControlSet\Control\ProductOptions" /v ProductType 2^>nul ^| find.exe /I "ProductType"') do set "WINDOWS_PRODUCT_TYPE=%%B"
+
+if not defined WINDOWS_BUILD (
+  call :Fail "Could not determine the Windows build number."
+  exit /b 1
+)
+if /I not "%WINDOWS_PRODUCT_TYPE%"=="WinNT" (
+  call :Fail "Only certified Windows client editions are supported; Windows Server is not certified."
+  exit /b 1
+)
+
+set "CERTIFIED_BUILD="
+for %%B in (7601 9200 9600 10240 10586 14393 15063 16299 17134 17763 18362 18363 19041 19042 19043 19044 19045 22000 22621 22631 26100 26200 28000) do if "%WINDOWS_BUILD%"=="%%B" set "CERTIFIED_BUILD=Y"
+if not defined CERTIFIED_BUILD (
+  call :Fail "Windows build %WINDOWS_BUILD% is not certified for Antreva Desk %ANTREVA_VERSION%."
+  exit /b 1
+)
+if "%WINDOWS_BUILD%"=="7601" (
+  call :CheckWindows7Hotfix "KB4490628"
+  if errorlevel 1 exit /b 1
+  call :CheckWindows7Hotfix "KB4474419"
+  if errorlevel 1 exit /b 1
+)
+call :Log "Windows client preflight passed: build %WINDOWS_BUILD%, %SELECTED_ARCH%."
+exit /b 0
+
+:CheckWindows7Hotfix
+set "WMIC_PATH=%SystemRoot%\System32\wbem\wmic.exe"
+if not exist "%WMIC_PATH%" (
+  call :Fail "Windows 7 prerequisite detection requires WMIC."
+  exit /b 1
+)
+"%WMIC_PATH%" qfe where "HotFixID='%~1'" get HotFixID /value 2>nul | find.exe /I "%~1" >nul
+if errorlevel 1 (
+  call :Fail "Windows 7 is missing required SHA-2 update %~1."
+  exit /b 1
+)
+exit /b 0
+
+:VerifyPayloadHash
+call :VerifyFileHash "%PAYLOAD_PATH%" "%PAYLOAD_HASH%" "selected RustDesk payload"
+exit /b %ERRORLEVEL%
+
+:VerifyInstalledHash
+call :VerifyFileHash "%INSTALLED_EXE%" "%PAYLOAD_HASH%" "installed RustDesk executable"
+exit /b %ERRORLEVEL%
+
+:VerifyFileHash
+where.exe certutil.exe >nul 2>&1
+if errorlevel 1 (
+  call :Fail "Windows certutil.exe is required to verify the %~3."
+  exit /b 1
+)
+set "HASH_OUTPUT=%TEMP%\AntrevaDesk-Hash-%RANDOM%-%RANDOM%.txt"
+certutil.exe -hashfile "%~1" SHA256 > "%HASH_OUTPUT%" 2>&1
+if errorlevel 1 goto hash_failed
+find.exe /I "%~2" "%HASH_OUTPUT%" >nul
+if errorlevel 1 goto hash_mismatch
+del /q "%HASH_OUTPUT%" >nul 2>&1
+call :Log "Verified the exact pinned SHA-256 for the %~3."
+exit /b 0
+
+:hash_failed
+if "%LOG_ENABLED%"=="1" type "%HASH_OUTPUT%" >> "%LOG_PATH%"
+del /q "%HASH_OUTPUT%" >nul 2>&1
+call :Fail "Windows could not calculate the %~3 hash."
+exit /b 1
+
+:hash_mismatch
+if "%LOG_ENABLED%"=="1" type "%HASH_OUTPUT%" >> "%LOG_PATH%"
+del /q "%HASH_OUTPUT%" >nul 2>&1
+call :Fail "The %~3 hash does not match the selected pinned payload."
+exit /b 1
+
+:VerifyHelpers
+for %%H in (AntrevaDesk-Elevate.vbs AntrevaDesk-ProcessWrapper.vbs AntrevaDesk-VerifyService.vbs AntrevaDesk-VerifyConfig.vbs) do (
+  if not exist "%SCRIPT_DIR%%%H" (
+    call :Fail "Required Windows helper %%H is missing."
+    exit /b 1
+  )
+  cscript.exe //nologo "%SCRIPT_DIR%%%H"
+  if errorlevel 1 (
+    call :Fail "Required Windows helper %%H did not pass its syntax check."
+    exit /b 1
+  )
+)
+exit /b 0
+
+:PromptForPassword
+echo.
+echo The permanent support password is visible while you type.
+echo Use only letters, numbers, @, period, or underscore.
+echo The password is briefly visible to Windows process inspection while RustDesk receives it.
+set "SUPPORT_PASSWORD="
+set "SUPPORT_PASSWORD_CONFIRM="
+set /p "SUPPORT_PASSWORD=Permanent support password: "
+call :ValidatePassword SUPPORT_PASSWORD
+if errorlevel 1 (
+  call :Fail "The password must be non-empty and use only letters, numbers, @, period, or underscore."
+  exit /b 1
+)
+set /p "SUPPORT_PASSWORD_CONFIRM=Confirm permanent support password: "
+call :ValidatePassword SUPPORT_PASSWORD_CONFIRM
+if errorlevel 1 (
+  set "SUPPORT_PASSWORD="
+  call :Fail "The confirmation password contains unsupported characters."
+  exit /b 1
+)
+if not "%SUPPORT_PASSWORD%"=="%SUPPORT_PASSWORD_CONFIRM%" (
+  set "SUPPORT_PASSWORD="
+  set "SUPPORT_PASSWORD_CONFIRM="
+  call :Fail "Permanent support passwords did not match."
+  exit /b 1
+)
+set "SUPPORT_PASSWORD_CONFIRM="
+exit /b 0
+
+:ValidatePassword
+setlocal EnableDelayedExpansion
+set "PASSWORD_VALUE=!%~1!"
+if not defined PASSWORD_VALUE endlocal & exit /b 1
+set "PASSWORD_CHECK=%TEMP%\AntrevaDesk-Password-%RANDOM%-%RANDOM%.txt"
+> "!PASSWORD_CHECK!" echo(!PASSWORD_VALUE!
+findstr.exe /R /X "[A-Za-z0-9@._][A-Za-z0-9@._]*" "!PASSWORD_CHECK!" >nul
+set "PASSWORD_VALID=!ERRORLEVEL!"
+del /q "!PASSWORD_CHECK!" >nul 2>&1
+endlocal & exit /b %PASSWORD_VALID%
+
+:InstallRustDesk
+call :Log "Stopping existing RustDesk processes before installation."
+taskkill.exe /IM rustdesk.exe /F >nul 2>&1
+set "INSTALL_OUTPUT=%TEMP%\AntrevaDesk-Install-%RANDOM%-%RANDOM%.txt"
+del /q "%INSTALL_OUTPUT%" >nul 2>&1
+call :Log "Installing the RustDesk managed service with a 180-second completion timeout."
+cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-ProcessWrapper.vbs" "%INSTALL_OUTPUT%" "%PAYLOAD_PATH%" "180" "--silent-install"
+set "INSTALL_EXIT=%ERRORLEVEL%"
+if "%LOG_ENABLED%"=="1" if exist "%INSTALL_OUTPUT%" type "%INSTALL_OUTPUT%" >> "%LOG_PATH%"
+if not "%INSTALL_EXIT%"=="0" (
+  if exist "%INSTALL_OUTPUT%" type "%INSTALL_OUTPUT%"
+  del /q "%INSTALL_OUTPUT%" >nul 2>&1
+  call :Fail "RustDesk installer failed, reported failure output, or exceeded 180 seconds."
+  exit /b 1
+)
+del /q "%INSTALL_OUTPUT%" >nul 2>&1
+
+set /a INSTALL_VERIFY_COUNT=0
+:wait_for_installed_state
+call :FindInstalledRustDesk
+if not defined INSTALLED_EXE goto installed_state_retry
+call :VerifyInstalledHash
+if errorlevel 1 exit /b 1
+call :VerifyRustDeskService
+if not errorlevel 1 goto installed_state_ready
+:installed_state_retry
+set /a INSTALL_VERIFY_COUNT+=1
+if %INSTALL_VERIFY_COUNT% GEQ 30 (
+  call :Fail "RustDesk installation did not produce the exact payload and a matching automatic running service."
+  exit /b 1
+)
+timeout.exe /t 1 /nobreak >nul
+goto wait_for_installed_state
+
+:installed_state_ready
+call :Log "Verified installed executable hash and RustDesk automatic running service."
+exit /b 0
+
+:FindInstalledRustDesk
+set "INSTALLED_EXE="
+if defined ProgramW6432 if exist "%ProgramW6432%\RustDesk\RustDesk.exe" set "INSTALLED_EXE=%ProgramW6432%\RustDesk\RustDesk.exe"
+if not defined INSTALLED_EXE if defined ProgramW6432 if exist "%ProgramW6432%\RustDesk\rustdesk.exe" set "INSTALLED_EXE=%ProgramW6432%\RustDesk\rustdesk.exe"
+if not defined INSTALLED_EXE if exist "%ProgramFiles%\RustDesk\RustDesk.exe" set "INSTALLED_EXE=%ProgramFiles%\RustDesk\RustDesk.exe"
+if not defined INSTALLED_EXE if exist "%ProgramFiles%\RustDesk\rustdesk.exe" set "INSTALLED_EXE=%ProgramFiles%\RustDesk\rustdesk.exe"
+if not defined INSTALLED_EXE if exist "%ProgramFiles(x86)%\RustDesk\RustDesk.exe" set "INSTALLED_EXE=%ProgramFiles(x86)%\RustDesk\RustDesk.exe"
+if not defined INSTALLED_EXE if exist "%ProgramFiles(x86)%\RustDesk\rustdesk.exe" set "INSTALLED_EXE=%ProgramFiles(x86)%\RustDesk\rustdesk.exe"
+exit /b 0
+
+:VerifyRustDeskService
+set "SERVICE_OUTPUT=%TEMP%\AntrevaDesk-Service-%RANDOM%-%RANDOM%.txt"
+cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-VerifyService.vbs" "%INSTALLED_EXE%" > "%SERVICE_OUTPUT%" 2>&1
+set "SERVICE_EXIT=%ERRORLEVEL%"
+if "%LOG_ENABLED%"=="1" type "%SERVICE_OUTPUT%" >> "%LOG_PATH%"
+del /q "%SERVICE_OUTPUT%" >nul 2>&1
+exit /b %SERVICE_EXIT%
+
+:ConfigureRustDesk
+call :Log "Importing the Antreva server configuration."
+call :RunRustDesk --config "%RUSTDESK_CONFIG_NAME%"
+if errorlevel 1 exit /b 1
+@@CONFIGURE_OPTIONS@@
+exit /b 0
+
+:SetRustDeskOption
+call :Log "Applying RustDesk option: %~1"
+call :RunRustDesk --option "%~1" "%~2"
+exit /b %ERRORLEVEL%
+
+:RunRustDesk
+set "RUSTDESK_OUTPUT=%TEMP%\AntrevaDesk-RustDesk-%RANDOM%-%RANDOM%.txt"
+"%INSTALLED_EXE%" %* > "%RUSTDESK_OUTPUT%" 2>&1
+set "RUSTDESK_EXIT=%ERRORLEVEL%"
+if "%LOG_ENABLED%"=="1" type "%RUSTDESK_OUTPUT%" >> "%LOG_PATH%"
+findstr.exe /I /C:"Installation and administrative privileges required" /C:"Settings are disabled" /C:"rejected" /C:"failed" /C:"error" "%RUSTDESK_OUTPUT%" >nul
+if not errorlevel 1 set "RUSTDESK_EXIT=1"
+if not "%RUSTDESK_EXIT%"=="0" type "%RUSTDESK_OUTPUT%"
+del /q "%RUSTDESK_OUTPUT%" >nul 2>&1
+if not "%RUSTDESK_EXIT%"=="0" (
+  call :Fail "RustDesk rejected a managed setup command."
+  exit /b 1
+)
+exit /b 0
+
+:SetPermanentPassword
+call :Log "Setting the permanent support password and requiring daemon acknowledgement."
+set "PASSWORD_OUTPUT=%TEMP%\AntrevaDesk-PasswordAck-%RANDOM%-%RANDOM%.txt"
+"%INSTALLED_EXE%" --password "%SUPPORT_PASSWORD%" > "%PASSWORD_OUTPUT%" 2>&1
+set "PASSWORD_EXIT=%ERRORLEVEL%"
+set "SUPPORT_PASSWORD="
+if "%LOG_ENABLED%"=="1" type "%PASSWORD_OUTPUT%" >> "%LOG_PATH%"
+findstr.exe /R /X /C:"Done!" "%PASSWORD_OUTPUT%" >nul
+if errorlevel 1 set "PASSWORD_EXIT=1"
+del /q "%PASSWORD_OUTPUT%" >nul 2>&1
+if not "%PASSWORD_EXIT%"=="0" (
+  call :Fail "RustDesk daemon did not acknowledge the current password command."
+  exit /b 1
+)
+call :Log "RustDesk daemon acknowledged the current password command."
+exit /b 0
+
+:VerifyPersistedState
+call :Log "Verifying exact CLI and service-profile persistence for every managed option."
+set /a CONFIG_VERIFY_COUNT=0
+:retry_config_verification
+call :VerifyAllCliOptions
+if errorlevel 1 goto config_retry
+call :VerifyServiceProfileOptions
+if not errorlevel 1 goto config_verified
+:config_retry
+set /a CONFIG_VERIFY_COUNT+=1
+if %CONFIG_VERIFY_COUNT% GEQ 30 (
+  call :Fail "RustDesk managed options did not persist exactly within 30 seconds."
+  exit /b 1
+)
+timeout.exe /t 1 /nobreak >nul
+goto retry_config_verification
+
+:config_verified
+set /a PASSWORD_VERIFY_COUNT=0
+:retry_password_verification
+cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-VerifyConfig.vbs" --password "%RUSTDESK_SERVICE_MAIN_CONFIG%" >nul 2>&1
+if not errorlevel 1 goto password_verified
+set /a PASSWORD_VERIFY_COUNT+=1
+if %PASSWORD_VERIFY_COUNT% GEQ 30 (
+  call :Fail "RustDesk did not persist a valid non-empty password and salt for the acknowledged command."
+  exit /b 1
+)
+timeout.exe /t 1 /nobreak >nul
+goto retry_password_verification
+
+:password_verified
+call :Log "Verified every managed option in CLI readback and the LocalService profile, plus current password persistence."
+exit /b 0
+
+:VerifyAllCliOptions
+@@VERIFY_CLI_OPTIONS@@
+exit /b 0
+
+:VerifyRustDeskOption
+set "OPTION_OUTPUT=%TEMP%\AntrevaDesk-Option-%RANDOM%-%RANDOM%.txt"
+"%INSTALLED_EXE%" --option "%~1" > "%OPTION_OUTPUT%" 2>&1
+set "OPTION_EXIT=%ERRORLEVEL%"
+set "ACTUAL_OPTION="
+set /p "ACTUAL_OPTION="<"%OPTION_OUTPUT%"
+if "%LOG_ENABLED%"=="1" type "%OPTION_OUTPUT%" >> "%LOG_PATH%"
+del /q "%OPTION_OUTPUT%" >nul 2>&1
+if not "%OPTION_EXIT%"=="0" exit /b 1
+if not "%ACTUAL_OPTION%"=="%~2" exit /b 1
+exit /b 0
+
+:VerifyServiceProfileOptions
+set "RUSTDESK_SERVICE_CONFIG=%SystemRoot%\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk2.toml"
+set "RUSTDESK_SERVICE_MAIN_CONFIG=%SystemRoot%\ServiceProfiles\LocalService\AppData\Roaming\RustDesk\config\RustDesk.toml"
+if not exist "%RUSTDESK_SERVICE_CONFIG%" exit /b 1
+cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-VerifyConfig.vbs" --options "%RUSTDESK_SERVICE_CONFIG%" @@VERIFY_CONFIG_ARGS@@ >nul 2>&1
+exit /b %ERRORLEVEL%
+
+:CreateAntrevaShortcuts
+set "ANTREVA_DIR=%ProgramData%\AntrevaDesk"
+set "ANTREVA_LAUNCHER=%ANTREVA_DIR%\Launch Antreva Desk.cmd"
+set "PUBLIC_DESKTOP=%PUBLIC%\Desktop"
+set "ALL_USERS_START=%ProgramData%\Microsoft\Windows\Start Menu\Programs\Antreva"
+if not exist "%ANTREVA_DIR%" mkdir "%ANTREVA_DIR%" >nul 2>&1
+if not exist "%PUBLIC_DESKTOP%" mkdir "%PUBLIC_DESKTOP%" >nul 2>&1
+if not exist "%ALL_USERS_START%" mkdir "%ALL_USERS_START%" >nul 2>&1
+> "%ANTREVA_LAUNCHER%" echo @echo off
+>> "%ANTREVA_LAUNCHER%" echo start "" "%INSTALLED_EXE%"
+copy /Y "%ANTREVA_LAUNCHER%" "%PUBLIC_DESKTOP%\Antreva Desk.cmd" >nul
+if errorlevel 1 (
+  call :Fail "Could not create the Public Desktop Antreva Desk launcher."
+  exit /b 1
+)
+copy /Y "%ANTREVA_LAUNCHER%" "%ALL_USERS_START%\Antreva Desk.cmd" >nul
+if errorlevel 1 (
+  call :Fail "Could not create the all-users Start Menu Antreva Desk launcher."
+  exit /b 1
+)
+call :Log "Created Public Desktop and all-users Start Menu launchers."
+exit /b 0
+
+:WriteResult
+> "%RESULT_PATH%.tmp" echo STATUS=%~1
+>> "%RESULT_PATH%.tmp" echo MESSAGE=%~2
+if /I "%~1"=="SUCCESS" >> "%RESULT_PATH%.tmp" echo INSTALLED_EXE=%INSTALLED_EXE%
+move /Y "%RESULT_PATH%.tmp" "%RESULT_PATH%" >nul
+exit /b 0
+
+:Log
+echo(%~1
+if "%LOG_ENABLED%"=="1" >> "%LOG_PATH%" echo [%DATE% %TIME%] %~1
+exit /b 0
+
+:Fail
+set "LAST_ERROR=%~1"
+call :Log "ERROR: %~1"
+exit /b 1
