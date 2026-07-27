@@ -36,6 +36,21 @@ The Command Prompt installer will:
 - apply and verify the Antreva server and managed-access settings;
 - launch RustDesk when configuration finishes.
 
+## Optional Bundle Integrity Check
+
+Before onboarding a managed client, a technician can run this non-installing
+check from Command Prompt:
+
+```text
+Antreva-Remote-Pilot-Setup.cmd --verify-bundle
+```
+
+This mode verifies architecture-based payload selection, the exact pinned
+SHA-256, and the generated elevation helper. It does not request administrator
+access, install RustDesk, change client configuration, or launch the app. It
+also does not run the supported-client OS preflight, so passing this check is
+not a substitute for the Windows certification matrix below.
+
 ## Managed Access Test Flow
 
 Use two machines on different networks if possible.

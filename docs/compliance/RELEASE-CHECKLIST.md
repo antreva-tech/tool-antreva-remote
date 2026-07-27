@@ -20,5 +20,9 @@ Complete this checklist before distributing a build to clients.
 - [ ] GitHub Actions release contains the
       `Antreva-Desk-1.0.3-Windows.zip` Command Prompt installer bundle and
       SHA-256 file.
+- [ ] GitHub Actions `--verify-bundle` check passes for both the exact pinned
+      payload and generated elevation helper without installing the client.
+- [ ] Normal setup still runs the supported-client OS preflight and rejects
+      Windows Server editions before installation.
 - [ ] Office server `data` directory is backed up.
 - [ ] External connectivity to TCP `21114:21119` and UDP `21116` is verified.

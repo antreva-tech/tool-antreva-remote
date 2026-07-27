@@ -23,6 +23,12 @@ The Windows 11 certification target includes Windows 11 26H1. On 32-bit
 Windows, setup automatically selects x86. On 64-bit Windows, setup
 automatically selects x64.
 
+The `--verify-bundle` option is a non-installing build and integrity check, not
+a supported-client check. It deliberately skips the client OS preflight so the
+GitHub Actions workflow can validate the bundle on a Windows Server runner.
+Normal setup without that option still performs the checks documented here and
+rejects Windows Server editions before installation.
+
 ## Windows 7 Requirements
 
 Windows 7 is end-of-life and must be prepared before Antreva Desk onboarding:

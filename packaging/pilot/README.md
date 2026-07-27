@@ -63,6 +63,17 @@ The setup creates:
 - Start Menu folder: `Antreva > Antreva Desk`
 - Local launcher folder: `%LOCALAPPDATA%\AntrevaDesk`
 
+To check an extracted bundle without installing or changing the computer, run:
+
+```text
+Antreva-Remote-Pilot-Setup.cmd --verify-bundle
+```
+
+This verifies payload selection, the exact pinned SHA-256, and the elevation
+helper. It does not run the supported-client OS preflight and must not be used
+as proof that a computer is supported. Normal setup still rejects Windows
+Server editions.
+
 ## Test Flow
 
 1. Run this installer on the client computer during authorized onboarding.

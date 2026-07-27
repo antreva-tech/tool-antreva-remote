@@ -77,6 +77,13 @@ requests to `main` and on pushes to `main`.
 - Pushes to `main` publish the ZIP and SHA-256 file to the GitHub Release named
   `Antreva Desk 1.0.3`.
 
+Before upload, CI runs the bundled installer with `--verify-bundle`. This is a
+non-installing integrity check that validates architecture selection, the exact
+pinned payload SHA-256, and the elevation helper. It intentionally skips the
+client operating-system preflight so it can run on GitHub's Windows Server
+runner. Running the installer normally still performs the full Windows client
+preflight and rejects Windows Server editions.
+
 The release tag is `antreva-desk-1.0.3`, and the installer bundle is
 `Antreva-Desk-1.0.3-Windows.zip`. Extract the ZIP and double-click
 `Antreva-Remote-Pilot-Setup.cmd` during authorized onboarding.
