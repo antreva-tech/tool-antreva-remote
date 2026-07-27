@@ -1,4 +1,4 @@
-name: Build and Release Installers
+name: Build Installer Test Artifacts
 
 on:
   pull_request:
@@ -10,15 +10,15 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: antreva-desk-installers-${{ github.ref }}
+  group: antreva-desk-test-artifacts-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   build:
-    name: Build installer artifact
+    name: Build non-installing test artifact
     runs-on: windows-latest
 
     steps:
@@ -33,69 +33,23 @@ jobs:
         shell: pwsh
         run: ./scripts/Build-PilotBundle.ps1
 
-      - name: Verify Command Prompt installer bundle
+      - name: Verify x64 Command Prompt bundle without installing
         shell: cmd
-        run: artifacts\Antreva-Desk-1.0.3-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
+        run: artifacts\Antreva-Desk-1.0.4-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
 
-      - name: Upload installer artifact
+      - name: Verify simulated x86 Command Prompt bundle without installing
+        shell: cmd
+        run: |
+          set PROCESSOR_ARCHITECTURE=x86
+          set PROCESSOR_ARCHITEW6432=
+          artifacts\Antreva-Desk-1.0.4-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
+
+      - name: Upload 30-day test artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Antreva-Desk-1.0.3-Windows
+          name: Antreva-Desk-1.0.4-Windows
           path: |
-            artifacts/Antreva-Desk-1.0.3-Windows.zip
-            artifacts/Antreva-Desk-1.0.3-Windows.sha256.txt
+            artifacts/Antreva-Desk-1.0.4-Windows.zip
+            artifacts/Antreva-Desk-1.0.4-Windows.sha256.txt
           if-no-files-found: error
           retention-days: 30
-
-  release:
-    name: Publish latest installer release
-    needs: build
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Download installer artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: Antreva-Desk-1.0.3-Windows
-          path: release-assets
-
-      - name: Write release notes
-        shell: bash
-        run: |
-          {
-            echo "Antreva Desk 1.0.3 managed-access Command Prompt installer bundle."
-            echo "Supports Windows 7 SP1 through Windows 11 x86/x64 with automatic architecture selection. Windows 7 requires SHA-2 updates KB4490628 and KB4474419 before setup."
-            echo "Requires no PowerShell on managed clients. Retains pinned payload hashes, build-time publisher validation, and end-to-end Antreva server configuration verification."
-            echo
-            echo "Built from commit: \`${GITHUB_SHA}\`"
-            echo
-            echo "Download Antreva-Desk-1.0.3-Windows.zip and verify it with the attached SHA256 file."
-          } > release-notes.md
-
-      - name: Publish latest release
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG_NAME: antreva-desk-1.0.3
-          RELEASE_TITLE: Antreva Desk 1.0.3
-        run: |
-          set -euo pipefail
-
-          if gh release view "$TAG_NAME" >/dev/null 2>&1; then
-            gh release delete "$TAG_NAME" --yes --cleanup-tag
-          fi
-
-          git tag -f "$TAG_NAME" "$GITHUB_SHA"
-          git push -f origin "refs/tags/$TAG_NAME"
-
-          gh release create "$TAG_NAME" \
-            release-assets/* \
-            --title "$RELEASE_TITLE" \
-            --notes-file release-notes.md \
-            --latest

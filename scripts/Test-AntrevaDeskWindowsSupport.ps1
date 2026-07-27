@@ -45,14 +45,22 @@ $supportDoc = Read-RepoFile 'docs\operations\WINDOWS-7-11-SUPPORT.md'
 $pilotReadme = Read-RepoFile 'packaging\pilot\README.md'
 $pilotTest = Read-RepoFile 'docs\operations\PILOT-WINDOWS-TEST.md'
 $releaseChecklist = Read-RepoFile 'docs\compliance\RELEASE-CHECKLIST.md'
-$setupCmd = Read-RepoFile 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd'
+$generatedSetupPath = Join-Path ([System.IO.Path]::GetTempPath()) "AntrevaDesk-WindowsSupport-$PID.cmd"
+& (Join-Path $ScriptDir 'New-AntrevaDeskInstaller.ps1') `
+    -PolicyPath (Join-Path $Root 'config\antreva-client-policy.json') `
+    -TemplatePath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd.in') `
+    -OutputPath $generatedSetupPath `
+    -Version '1.0.4' | Out-Null
+$setupCmd = Get-Content -LiteralPath $generatedSetupPath -Raw
+Remove-Item -LiteralPath $generatedSetupPath -Force
 $bundleScript = Read-RepoFile 'scripts\Build-PilotBundle.ps1'
 $workflow = Read-RepoFile '.github\workflows\build-and-release-installers.yml'
 $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'
 
-foreach ($text in @($supportDoc, $pilotReadme, $pilotTest, $workflow)) {
+foreach ($text in @($supportDoc, $pilotReadme, $pilotTest)) {
     Assert-Contains -Name 'support matrix' -Text $text -Expected 'Windows 7 SP1 through Windows 11 x86/x64'
 }
+Assert-Contains -Name 'workflow non-installing label' -Text $workflow -Expected 'without installing'
 
 foreach ($expected in @('Windows 7 SP1 x86', 'Windows 7 SP1 x64', 'Windows 8 x86', 'Windows 8 x64', 'Windows 8.1 x86', 'Windows 8.1 x64', 'Windows 10 x86', 'Windows 10 x64', 'Windows 11 x64', 'Windows 11 26H1', 'KB4490628', 'KB4474419')) {
     Assert-Contains -Name 'Windows 7-11 support documentation' -Text $supportDoc -Expected $expected
@@ -93,7 +101,7 @@ $verifyBundleBlock = $setupCmd.Substring($verifyBundleStart, $runSetupStart - $v
 $runSetupBlock = $setupCmd.Substring($runSetupStart, $selectArchitectureStart - $runSetupStart)
 Assert-NotContains -Name 'CI bundle verification client OS independence' -Text $verifyBundleBlock -Unexpected 'call :PreflightWindows'
 Assert-Contains -Name 'real installation client OS preflight' -Text $runSetupBlock -Expected 'call :PreflightWindows'
-Assert-Contains -Name 'real installation Windows Server rejection' -Text $setupCmd -Expected 'Windows Server editions are not supported.'
+Assert-Contains -Name 'real installation Windows Server rejection' -Text $setupCmd -Expected 'Windows Server is not certified.'
 
 Assert-Contains -Name 'pilot bundle RustDesk version' -Text $bundleScript -Expected '$RustDeskVersion = ''1.4.8'''
 foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.exe', '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7')) {
@@ -113,7 +121,7 @@ foreach ($unexpected in @('Configure-And-Launch-Antreva-Remote-Pilot.ps1', 'Antr
 }
 Assert-NotContains -Name 'active workflow NSIS dependency' -Text $workflow -Unexpected 'Install NSIS'
 Assert-NotContains -Name 'active workflow GUI installer' -Text $workflow -Unexpected 'AntrevaDesk-Setup'
-Assert-Contains -Name 'active workflow Command Prompt zip' -Text $workflow -Expected 'Antreva-Desk-1.0.3-Windows.zip'
+Assert-Contains -Name 'active workflow Command Prompt zip' -Text $workflow -Expected 'Antreva-Desk-1.0.4-Windows.zip'
 Assert-Contains -Name 'active workflow CMD verification' -Text $workflow -Expected 'shell: cmd'
 Assert-Contains -Name 'active workflow zero-PowerShell verification mode' -Text $workflow -Expected '--verify-bundle'
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskWindowsSupport.ps1'

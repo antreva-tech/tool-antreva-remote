@@ -41,21 +41,28 @@ function Assert-NotContains {
     }
 }
 
-$packagedSetup = Read-RepoFile 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd'
+$generatedSetupPath = Join-Path ([System.IO.Path]::GetTempPath()) "AntrevaDesk-CustomServer-$PID.cmd"
+& (Join-Path $ScriptDir 'New-AntrevaDeskInstaller.ps1') `
+    -PolicyPath (Join-Path $Root 'config\antreva-client-policy.json') `
+    -TemplatePath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd.in') `
+    -OutputPath $generatedSetupPath `
+    -Version '1.0.4' | Out-Null
+$packagedSetup = Get-Content -LiteralPath $generatedSetupPath -Raw
+Remove-Item -LiteralPath $generatedSetupPath -Force
 $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'
 $policy = Get-Content -LiteralPath (Join-Path $Root 'config\antreva-client-policy.json') -Raw | ConvertFrom-Json
 
 foreach ($expected in @(
-    'INSTALL_WAIT_COUNT',
-    'Waiting for installer finalization',
-    'ShellExecute WScript.Arguments',
+    'INSTALL_VERIFY_COUNT',
+    '180-second completion timeout',
+    'AntrevaDesk-Elevate.vbs',
     '--elevated',
     'AntrevaDesk-Setup.log',
     '%ProgramData%\AntrevaDesk\Logs',
     'Setup did not finish successfully',
     'RustDesk.toml',
-    '^[ ]*password[ ]*=',
-    '^[ ]*salt[ ]*='
+    'RustDesk daemon did not acknowledge',
+    'AntrevaDesk-VerifyConfig.vbs'
 )) {
     Assert-Contains -Name 'Command Prompt setup reliability gate' -Text $packagedSetup -Expected $expected
 }
@@ -66,23 +73,17 @@ foreach ($expected in @('--config', '%RUSTDESK_CONFIG_NAME%', 'rustdesk-host=%SE
 
 foreach ($expected in @(
     'RustDesk2.toml',
-    'FindRustDeskConfig',
-    'VerifyConfigLine',
-    '"custom-rendezvous-server" "%SERVER_HOST%" "required"',
-    '"relay-server" "%SERVER_HOST%" "allow-blank"',
-    '"key" "%SERVER_KEY%" "required"',
-    'does not contain the required'
+    'VerifyServiceProfileOptions',
+    '"custom-rendezvous-server" "104.184.67.190"',
+    '"relay-server" "104.184.67.190"',
+    '"key" "YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg="',
+    'did not persist exactly'
 )) {
     Assert-Contains -Name 'persisted custom server verification' -Text $packagedSetup -Expected $expected
 }
 
 foreach ($property in $policy.rustdeskOptions.PSObject.Properties) {
-    $expectedValue = switch ($property.Name) {
-        'custom-rendezvous-server' { '%SERVER_HOST%' }
-        'relay-server' { '%SERVER_HOST%' }
-        'key' { '%SERVER_KEY%' }
-        default { [string]$property.Value }
-    }
+    $expectedValue = [string]$property.Value
     $expectedCommand = "call :SetRustDeskOption `"$($property.Name)`" `"$expectedValue`""
     Assert-Contains -Name "managed option $($property.Name)" -Text $packagedSetup -Expected $expectedCommand
 }

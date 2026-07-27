@@ -1,0 +1,146 @@
+name: Release Certified Antreva Desk
+
+on:
+  workflow_dispatch:
+    inputs:
+      certification_evidence_url:
+        description: HTTPS URL for the Windows certification evidence archive
+        required: true
+        type: string
+      certification_evidence_sha256:
+        description: SHA-256 for the certification evidence archive
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: antreva-desk-public-release
+  cancel-in-progress: false
+
+env:
+  release_tag: antreva-desk-1.0.4
+  release_title: Antreva Desk 1.0.4
+  bundle_name: Antreva-Desk-1.0.4-Windows
+
+jobs:
+  release:
+    name: Sign, certify, and publish
+    runs-on: windows-latest
+    environment: client-release
+
+    steps:
+      - name: Check out exact release source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate protected release inputs
+        shell: pwsh
+        env:
+          ANTREVA_SIGNING_CERTIFICATE_BASE64: ${{ secrets.ANTREVA_SIGNING_CERTIFICATE_BASE64 }}
+          ANTREVA_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.ANTREVA_SIGNING_CERTIFICATE_PASSWORD }}
+          ANTREVA_SIGNER_THUMBPRINT: ${{ secrets.ANTREVA_SIGNER_THUMBPRINT }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:ANTREVA_SIGNING_CERTIFICATE_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:ANTREVA_SIGNING_CERTIFICATE_PASSWORD) -or
+              $env:ANTREVA_SIGNER_THUMBPRINT -notmatch '^[A-Fa-f0-9]{40}$') {
+            throw 'Antreva signing credentials and pinned signer thumbprint are required.'
+          }
+          if ('${{ inputs.certification_evidence_url }}' -notmatch '^https://') {
+            throw 'Certification evidence must use an HTTPS URL.'
+          }
+          if ('${{ inputs.certification_evidence_sha256 }}' -notmatch '^[A-Fa-f0-9]{64}$') {
+            throw 'Certification evidence SHA-256 is invalid.'
+          }
+          if (git tag --list '${{ env.release_tag }}') {
+            throw 'The 1.0.4 tag already exists. Release tags are immutable.'
+          }
+
+      - name: Validate source and download pinned upstream payloads
+        shell: pwsh
+        run: |
+          ./scripts/Test-Repository.ps1
+          ./scripts/Build-PilotBundle.ps1
+
+      - name: Sign payloads with Antreva certificate
+        shell: pwsh
+        env:
+          ANTREVA_SIGNING_CERTIFICATE_BASE64: ${{ secrets.ANTREVA_SIGNING_CERTIFICATE_BASE64 }}
+          ANTREVA_SIGNING_CERTIFICATE_PASSWORD: ${{ secrets.ANTREVA_SIGNING_CERTIFICATE_PASSWORD }}
+          ANTREVA_SIGNER_THUMBPRINT: ${{ secrets.ANTREVA_SIGNER_THUMBPRINT }}
+        run: |
+          $certificatePath = Join-Path $env:RUNNER_TEMP 'antreva-signing.pfx'
+          try {
+            [IO.File]::WriteAllBytes($certificatePath, [Convert]::FromBase64String($env:ANTREVA_SIGNING_CERTIFICATE_BASE64))
+            $signTool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin" -Filter signtool.exe -Recurse |
+              Sort-Object FullName -Descending |
+              Select-Object -First 1
+            if ($null -eq $signTool) { throw 'signtool.exe was not found.' }
+            $payloads = @(
+              'artifacts\pilot\rustdesk-1.4.8-x86_64.exe',
+              'artifacts\pilot\rustdesk-1.4.8-x86-sciter.exe'
+            )
+            foreach ($payload in $payloads) {
+              & $signTool.FullName sign /f $certificatePath /p $env:ANTREVA_SIGNING_CERTIFICATE_PASSWORD /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $payload
+              if ($LASTEXITCODE -ne 0) { throw "Signing failed for $payload." }
+              $signature = Get-AuthenticodeSignature -FilePath $payload
+              if ($signature.Status -ne 'Valid' -or
+                  $signature.SignerCertificate.Thumbprint -ne $env:ANTREVA_SIGNER_THUMBPRINT) {
+                throw "Antreva signer verification failed for $payload."
+              }
+            }
+            $x64Hash = (Get-FileHash -Algorithm SHA256 $payloads[0]).Hash
+            $x86Hash = (Get-FileHash -Algorithm SHA256 $payloads[1]).Hash
+            "X64_PAYLOAD_SHA256=$x64Hash" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+            "X86_PAYLOAD_SHA256=$x86Hash" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          }
+          finally {
+            if (Test-Path -LiteralPath $certificatePath) {
+              Remove-Item -LiteralPath $certificatePath -Force
+            }
+          }
+
+      - name: Build Antreva-signed release bundle
+        shell: pwsh
+        env:
+          ANTREVA_SIGNER_THUMBPRINT: ${{ secrets.ANTREVA_SIGNER_THUMBPRINT }}
+        run: |
+          ./scripts/Build-PilotBundle.ps1 `
+            -X64PayloadSha256 $env:X64_PAYLOAD_SHA256 `
+            -X86PayloadSha256 $env:X86_PAYLOAD_SHA256 `
+            -PayloadSignerThumbprint $env:ANTREVA_SIGNER_THUMBPRINT
+          cmd.exe /d /c "artifacts\${{ env.bundle_name }}\Antreva-Remote-Pilot-Setup.cmd --verify-bundle"
+          if ($LASTEXITCODE -ne 0) { throw 'Generated release bundle verification failed.' }
+
+      - name: Verify and attach Windows certification evidence
+        shell: pwsh
+        run: |
+          $evidencePath = 'artifacts\Antreva-Desk-1.0.4-Windows-Certification.zip'
+          Invoke-WebRequest -Uri '${{ inputs.certification_evidence_url }}' -OutFile $evidencePath
+          $actualHash = (Get-FileHash -Algorithm SHA256 $evidencePath).Hash
+          if ($actualHash -ne '${{ inputs.certification_evidence_sha256 }}') {
+            throw "Certification evidence hash mismatch. Expected ${{ inputs.certification_evidence_sha256 }} but got $actualHash."
+          }
+
+      - name: Publish immutable certified release
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          @"
+          Antreva Desk 1.0.4 certified managed-access Command Prompt installer.
+
+          The Windows payloads were signed with the protected Antreva signing certificate and verified against the pinned Antreva signer. The attached certification archive covers the required Windows 7 SP1 and Windows 10 22H2 clean-install, upgrade, reboot, alternate-administrator, remote-control, password, and bidirectional file-transfer gates.
+
+          Built from commit: $env:GITHUB_SHA
+          "@ | Set-Content -LiteralPath release-notes.md -Encoding UTF8
+          gh release create '${{ env.release_tag }}' `
+            "artifacts/${{ env.bundle_name }}.zip" `
+            "artifacts/${{ env.bundle_name }}.sha256.txt" `
+            'artifacts/Antreva-Desk-1.0.4-Windows-Certification.zip' `
+            --title '${{ env.release_title }}' `
+            --notes-file release-notes.md `
+            --target $env:GITHUB_SHA `
+            --latest

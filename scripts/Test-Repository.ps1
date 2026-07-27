@@ -15,6 +15,7 @@ try {
     & (Join-Path $ScriptDir 'Test-AntrevaDeskWindowsSupport.ps1') | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskCustomServerInstall.ps1') | Out-Null
     & (Join-Path $ScriptDir 'Test-AntrevaDeskPayloadValidation.ps1') | Out-Null
+    & (Join-Path $ScriptDir 'Test-AntrevaDeskInstallerScenarios.ps1') | Out-Null
 
     $required = @(
         'README.md',
@@ -28,7 +29,14 @@ try {
         'scripts\Test-AntrevaDeskWindowsSupport.ps1',
         'scripts\Test-AntrevaDeskCustomServerInstall.ps1',
         'scripts\Test-AntrevaDeskPayloadValidation.ps1',
+        'scripts\Test-AntrevaDeskInstallerScenarios.ps1',
+        'scripts\New-AntrevaDeskInstaller.ps1',
         'packaging\pilot\AntrevaDesk-PayloadValidation.ps1',
+        'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd.in',
+        'packaging\pilot\AntrevaDesk-Elevate.vbs',
+        'packaging\pilot\AntrevaDesk-ProcessWrapper.vbs',
+        'packaging\pilot\AntrevaDesk-VerifyService.vbs',
+        'packaging\pilot\AntrevaDesk-VerifyConfig.vbs',
         'scripts\Build-WindowsRelease.ps1'
     )
 
@@ -38,6 +46,9 @@ try {
         }
     }
 
+    # Expected-failure native fixtures set LASTEXITCODE by design. Do not let
+    # that stale value turn a successful pwsh GitHub Actions step into failure.
+    $global:LASTEXITCODE = 0
     Write-Output "Repository verification passed."
 }
 finally {

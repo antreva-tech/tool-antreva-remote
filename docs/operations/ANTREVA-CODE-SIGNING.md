@@ -95,11 +95,30 @@ Before distributing a branded Antreva build:
 - [ ] Timestamp is present.
 - [ ] Source offer and AGPL notices are published with the release.
 
+For Antreva Desk 1.0.4, ordinary pull-request and `main` workflows stop at a
+30-day upstream-signed test artifact. They cannot publish a release. The
+separate `Release Certified Antreva Desk` workflow uses the protected
+`client-release` environment and requires:
+
+- Antreva signing certificate credentials and a pinned Antreva signer
+  thumbprint;
+- successful Authenticode verification of both x86 and x64 payloads after
+  signing;
+- an HTTPS Windows certification evidence archive plus its exact SHA-256; and
+- an unused immutable `antreva-desk-1.0.4` tag.
+
+The workflow must be adapted to the selected hardware-backed or cloud signing
+provider before credentials are provisioned. Its current `signtool` path is
+appropriate only for a provider that exposes protected CI-compatible
+certificate material. Do not export a key in violation of the certificate
+provider's custody requirements.
+
 ## Current Pilot State
 
-The pilot currently uses the official signed RustDesk Windows binary configured
-for Antreva's server. That is enough to test connectivity, managed access,
-remote control, and file transfer.
+The ordinary 1.0.4 test artifact uses the official signed RustDesk Windows
+binary configured for Antreva's server. That is enough to test connectivity,
+managed access, remote control, and file transfer, but it is not a
+client-ready/latest release.
 
 The final Antreva-branded release still needs:
 

@@ -1,100 +1,70 @@
-# Antreva Desk 1.0.3 Managed Access
+# Antreva Desk 1.0.4 Managed Access Test Bundle
 
-This is a temporary Command Prompt installer bundle for testing Antreva Desk
-Managed Access while the Antreva-specific code signing and fully branded
-client build are being prepared.
+`Antreva-Desk-1.0.4-Windows.zip` is a zero-PowerShell Command Prompt bundle
+for controlled Windows certification. Ordinary pull-request and `main`
+workflows upload it as a 30-day test artifact. It is not client-ready and must
+not be presented as the latest public release unless the separate protected
+release workflow completes Antreva signing and live Windows certification.
+The documented test matrix spans Windows 7 SP1 through Windows 11 x86/x64,
+subject to the explicit build allowlist and live gates below.
 
-`Antreva-Desk-1.0.3-Windows.zip` bundles the official RustDesk `1.4.8`
-Windows payloads:
+The test bundle contains the pinned RustDesk `1.4.8` x64 and x86 Sciter
+payloads, the generated `Antreva-Remote-Pilot-Setup.cmd`, and Windows Script
+Host helpers for elevation, bounded process execution, service inspection, and
+exact configuration verification. No PowerShell file or invocation is shipped
+to the managed client.
 
-- `payloads\x64\rustdesk-1.4.8-x86_64.exe`
-- `payloads\x86\rustdesk-1.4.8-x86-sciter.exe`
+## Setup Behavior
 
-The CMD installer requires no PowerShell. It automatically selects the correct
-payload, verifies its exact SHA-256 with Windows `certutil`, requests Windows
-administrator elevation, visibly prompts for the permanent support password,
-installs the RustDesk service, and applies and verifies the Antreva server
-settings. The build pipeline verifies the exact payload hash and pinned
-RustDesk publisher before creating the ZIP.
+Run `Antreva-Remote-Pilot-Setup.cmd` from the extracted folder. Setup:
 
-The current-attempt setup log is written to
-`%ProgramData%\AntrevaDesk\Logs\AntrevaDesk-Setup.log`.
+- allows only explicitly certified Windows client build numbers;
+- selects native x86, native x64, or x64 from a 32-bit Command Prompt on x64;
+- verifies the selected payload hash before and after installation;
+- keeps the original user process waiting while a separate administrator
+  process performs machine-wide setup;
+- waits up to 180 seconds for the installer and rejects failure output;
+- requires a matching, automatic, running `RustDesk` service;
+- visibly prompts for the permanent password and requires daemon
+  acknowledgement;
+- verifies exact CLI and LocalService-profile persistence for the rendezvous
+  server, non-blank relay, public key, and every managed policy option;
+- creates Public Desktop and all-users Start Menu launchers; and
+- returns to the original user process to launch RustDesk without elevation.
 
-This pilot installer supports Windows 7 SP1 through Windows 11 x86/x64 without
-PowerShell. Windows 7 requires SHA-2 updates KB4490628 and KB4474419 before
-setup.
+When a standard user supplies separate administrator credentials, the service
+and shortcuts remain machine-wide and the original signed-in user receives the
+final result and app launch.
+
+The current-attempt log is
+`%ProgramData%\AntrevaDesk\Logs\AntrevaDesk-Setup.log`. Result files never
+contain the permanent password. The password is visible while typed and is
+briefly exposed in the RustDesk CLI process command line while the daemon
+receives it; this is unavoidable with the pinned RustDesk CLI.
 
 ## Contents
 
 - `Antreva-Remote-Pilot-Setup.cmd`
+- `AntrevaDesk-Elevate.vbs`
+- `AntrevaDesk-ProcessWrapper.vbs`
+- `AntrevaDesk-VerifyService.vbs`
+- `AntrevaDesk-VerifyConfig.vbs`
 - `payloads\x64\rustdesk-1.4.8-x86_64.exe`
 - `payloads\x86\rustdesk-1.4.8-x86-sciter.exe`
-- `README.md`
 
-## Server Settings
-
-- ID server: `104.184.67.190`
-- Relay server: `104.184.67.190`
-- Public key: `YS9ei5TCWktK9TjR5ZkE1sagedm4XmZWRX+kWfkisEg=`
-
-## How to Run
-
-Extract the ZIP during authorized onboarding, then double-click:
-
-```text
-Antreva-Remote-Pilot-Setup.cmd
-```
-
-The setup will:
-
-- verify the supported Windows 7-11 x86/x64 client matrix;
-- automatically choose 64-bit on 64-bit Windows and 32-bit on 32-bit Windows;
-- request administrator elevation;
-- collect and confirm the permanent support password in Command Prompt;
-- install the RustDesk service;
-- import and verify the Antreva ID server, relay server, and public key;
-- apply Antreva server and managed-access settings;
-- create visible `Antreva Desk` shortcuts;
-- launch the installed app.
-
-The setup creates:
-
-- Desktop shortcut: `Antreva Desk`
-- Start Menu folder: `Antreva > Antreva Desk`
-- Local launcher folder: `%LOCALAPPDATA%\AntrevaDesk`
-
-To check an extracted bundle without installing or changing the computer, run:
+## Non-installing CI Check
 
 ```text
 Antreva-Remote-Pilot-Setup.cmd --verify-bundle
 ```
 
-This verifies payload selection, the exact pinned SHA-256, and the elevation
-helper. It does not run the supported-client OS preflight and must not be used
-as proof that a computer is supported. Normal setup still rejects Windows
-Server editions.
+This checks architecture selection, the selected exact payload hash, and
+required WSH helpers. It does not install the service and deliberately skips
+the client OS check so it can run on a Windows Server CI runner. Passing it is
+not Windows certification.
 
-## Test Flow
+## Release Boundary
 
-1. Run this installer on the client computer during authorized onboarding.
-2. Approve the Windows administrator elevation prompt if Windows asks for it.
-3. Enter and confirm the permanent support password in Command Prompt.
-4. Confirm setup reports that the Antreva server settings and permanent
-   password were verified.
-5. Leave Antreva Desk/RustDesk running after setup finishes.
-6. Record the client RustDesk ID shown in the app.
-7. From the technician computer, connect to that ID using the permanent support
-   password.
-8. Test remote control and file transfer in both directions.
-9. Confirm the tray/app remains visible on the client computer.
-
-## Limitations
-
-- The launcher and shortcuts are named Antreva Desk, but the app UI is still
-  RustDesk-branded.
-- Command Prompt displays the permanent support password while it is entered.
-  Use only letters, numbers, `@`, period, or underscore.
-- The RustDesk payloads are signed by the upstream RustDesk publisher, not
-  Antreva.
-- The final Antreva Desk client build will be separately branded and signed
-  after Antreva code signing is ready.
+The pinned x86 Sciter payload must successfully launch on live Windows 7 SP1
+x86 before 1.0.4 can be public. If it fails, block 1.0.4 and open a separate
+pinned-payload selection task; do not silently downgrade the payload.
