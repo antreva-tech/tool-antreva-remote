@@ -18,18 +18,20 @@ These values are stored in `config/antreva-client-policy.json`.
 
 ## Prepare Each Managed Windows Client
 
-For customer-style pilot testing, run:
+For customer-style pilot testing, extract the release ZIP and run:
 
 ```text
-AntrevaDesk-Setup-1.0.2.exe
+Antreva-Remote-Pilot-Setup.cmd
 ```
 
-The installer GUI will:
+The CMD and PowerShell installer will:
 
 - verify Windows 7-11 x86/x64 support requirements before install;
-- collect the architecture selection;
-- collect and confirm the permanent support password;
+- automatically select the matching x86 or x64 payload;
 - request administrator elevation;
+- collect and confirm the permanent support password in a visible PowerShell
+  window;
+- verify the selected payload hash and pinned RustDesk publisher;
 - install the RustDesk service;
 - apply and verify the Antreva server and managed-access settings;
 - launch RustDesk when configuration finishes.
@@ -57,14 +59,14 @@ The script will:
 
 Use two machines on different networks if possible.
 
-1. On the client machine, run `AntrevaDesk-Setup-1.0.2.exe` during authorized
-   onboarding.
-2. Select the recommended architecture.
+1. On the client machine, extract `Antreva-Desk-1.0.3-Windows.zip` and run
+   `Antreva-Remote-Pilot-Setup.cmd` during authorized onboarding.
+2. Confirm setup selects the architecture that matches Windows.
 3. If Windows cannot retrieve the publisher certificate chain, confirm the
    setup log records an offline-safe validation warning (including PowerShell
    5.1 `UnknownError` when independent chain inspection confirms the cause) and installation
    continues only for the pinned payload hash and publisher certificate.
-4. Enter and confirm the permanent support password in the installer.
+4. Enter and confirm the permanent support password in PowerShell.
 5. Approve the Windows administrator elevation prompt if Windows asks for it.
 6. Write down the client RustDesk ID shown in the app.
 7. On the technician machine, run Antreva Remote/RustDesk configured for the
@@ -85,7 +87,8 @@ Use two machines on different networks if possible.
 
 Repeat this flow on Windows 7 SP1 x64, Windows 8 x64, Windows 8.1 x64,
 Windows 10 x64, Windows 7 SP1 x86, Windows 8 x86, Windows 8.1 x86, Windows 10
-x86, and Windows 11 x64 before claiming Windows 7-11 support for a release.
+x86, and Windows 11 26H1 x64 before claiming Windows 7-11 support for a
+release.
 
 ## Expected Results
 
