@@ -46,6 +46,9 @@ try {
         }
     }
 
+    # Expected-failure native fixtures set LASTEXITCODE by design. Do not let
+    # that stale value turn a successful pwsh GitHub Actions step into failure.
+    $global:LASTEXITCODE = 0
     Write-Output "Repository verification passed."
 }
 finally {
