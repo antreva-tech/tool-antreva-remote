@@ -63,12 +63,14 @@ For internal test machines, `scripts/Apply-AntrevaClientPolicy.ps1` can apply
 the Antreva RustDesk options to a built `rustdesk.exe` before packaging.
 
 For the fastest two-machine pilot using the official signed RustDesk binary,
-run `scripts/Setup-WindowsPilot.ps1` and follow
-`docs/operations/PILOT-WINDOWS-TEST.md`.
+build the ZIP with `scripts/Build-PilotBundle.ps1`, then run the bundled
+`Antreva-Remote-Pilot-Setup.cmd` on the managed client and follow
+`docs/operations/PILOT-WINDOWS-TEST.md`. The managed client does not require
+PowerShell.
 
 ## Installer Downloads
 
-GitHub Actions builds the Antreva Desk PowerShell installer bundle on pull
+GitHub Actions builds the Antreva Desk Command Prompt installer bundle on pull
 requests to `main` and on pushes to `main`.
 
 - Pull requests upload a 30-day workflow artifact for review/testing.

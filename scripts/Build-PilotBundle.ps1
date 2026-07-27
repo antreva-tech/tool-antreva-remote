@@ -81,8 +81,6 @@ Remove-Item -LiteralPath $ChecksumPath -Force -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $BundleDir | Out-Null
 
 Copy-Item -LiteralPath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd') -Destination $BundleDir
-Copy-Item -LiteralPath (Join-Path $Root 'packaging\pilot\Configure-And-Launch-Antreva-Remote-Pilot.ps1') -Destination $BundleDir
-Copy-Item -LiteralPath (Join-Path $Root 'packaging\pilot\AntrevaDesk-PayloadValidation.ps1') -Destination $BundleDir
 Copy-Item -LiteralPath (Join-Path $Root 'packaging\pilot\README.md') -Destination $BundleDir
 
 foreach ($entry in $Payloads.GetEnumerator()) {

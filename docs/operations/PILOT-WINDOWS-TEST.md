@@ -5,8 +5,9 @@ Antreva Remote server and managed-access onboarding. It is not yet the final
 branded Antreva executable.
 
 This run supports Windows 7 SP1 through Windows 11 x86/x64. Windows 7 test
-systems must have WMF 5.1 and SHA-2 updates KB4490628 and KB4474419 installed
-before onboarding. See `docs/operations/WINDOWS-7-11-SUPPORT.md`.
+systems must have SHA-2 updates KB4490628 and KB4474419 installed before
+onboarding. PowerShell is not required. See
+`docs/operations/WINDOWS-7-11-SUPPORT.md`.
 
 ## Server Values
 
@@ -24,33 +25,13 @@ For customer-style pilot testing, extract the release ZIP and run:
 Antreva-Remote-Pilot-Setup.cmd
 ```
 
-The CMD and PowerShell installer will:
+The Command Prompt installer will:
 
 - verify Windows 7-11 x86/x64 support requirements before install;
 - automatically select the matching x86 or x64 payload;
 - request administrator elevation;
-- collect and confirm the permanent support password in a visible PowerShell
-  window;
-- verify the selected payload hash and pinned RustDesk publisher;
-- install the RustDesk service;
-- apply and verify the Antreva server and managed-access settings;
-- launch RustDesk when configuration finishes.
-
-For local developer testing only, run this from the repository root:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\Setup-WindowsPilot.ps1 -LaunchAfterConfigure
-```
-
-The script will:
-
-- verify Windows 7-11 x86/x64 support requirements before install;
-- validate the Antreva managed-access policy;
-- download the selected RustDesk `1.4.8` Windows payload if needed;
-- verify the release SHA-256;
-- verify the upstream Authenticode signature;
-- relaunch itself as Administrator if needed;
-- prompt the technician for the permanent support password;
+- collect and confirm the permanent support password in Command Prompt;
+- verify the selected payload against its exact pinned SHA-256;
 - install the RustDesk service;
 - apply and verify the Antreva server and managed-access settings;
 - launch RustDesk when configuration finishes.
@@ -62,11 +43,9 @@ Use two machines on different networks if possible.
 1. On the client machine, extract `Antreva-Desk-1.0.3-Windows.zip` and run
    `Antreva-Remote-Pilot-Setup.cmd` during authorized onboarding.
 2. Confirm setup selects the architecture that matches Windows.
-3. If Windows cannot retrieve the publisher certificate chain, confirm the
-   setup log records an offline-safe validation warning (including PowerShell
-   5.1 `UnknownError` when independent chain inspection confirms the cause) and installation
-   continues only for the pinned payload hash and publisher certificate.
-4. Enter and confirm the permanent support password in PowerShell.
+3. Confirm the setup log records successful verification of the exact pinned
+   payload SHA-256. A changed payload must stop installation.
+4. Enter and confirm the permanent support password in Command Prompt.
 5. Approve the Windows administrator elevation prompt if Windows asks for it.
 6. Write down the client RustDesk ID shown in the app.
 7. On the technician machine, run Antreva Remote/RustDesk configured for the
