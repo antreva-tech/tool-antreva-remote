@@ -41,30 +41,6 @@ function Assert-NotContains {
     }
 }
 
-function Assert-BitmapDimensions {
-    param(
-        [Parameter(Mandatory = $true)][string]$Name,
-        [Parameter(Mandatory = $true)][string]$Path,
-        [Parameter(Mandatory = $true)][int]$ExpectedWidth,
-        [Parameter(Mandatory = $true)][int]$ExpectedHeight
-    )
-
-    Add-Type -AssemblyName System.Drawing
-    $fullPath = Join-Path $Root $Path
-    if (-not (Test-Path -LiteralPath $fullPath)) {
-        throw "Windows support check failed: $Name image is missing: $Path"
-    }
-
-    $image = [System.Drawing.Image]::FromFile($fullPath)
-    try {
-        if ($image.Width -ne $ExpectedWidth -or $image.Height -ne $ExpectedHeight) {
-            throw "Windows support check failed: $Name image must be ${ExpectedWidth}x${ExpectedHeight}, got $($image.Width)x$($image.Height)."
-        }
-    } finally {
-        $image.Dispose()
-    }
-}
-
 $supportDoc = Read-RepoFile 'docs\operations\WINDOWS-7-11-SUPPORT.md'
 $pilotReadme = Read-RepoFile 'packaging\pilot\README.md'
 $pilotTest = Read-RepoFile 'docs\operations\PILOT-WINDOWS-TEST.md'
@@ -76,13 +52,12 @@ $payloadValidation = Read-RepoFile 'packaging\pilot\AntrevaDesk-PayloadValidatio
 $bundleScript = Read-RepoFile 'scripts\Build-PilotBundle.ps1'
 $workflow = Read-RepoFile '.github\workflows\build-and-release-installers.yml'
 $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'
-$nsisScript = Read-RepoFile 'packaging\antrevadesk\AntrevaDesk-Setup.nsi'
 
 foreach ($text in @($supportDoc, $pilotReadme, $pilotTest, $workflow)) {
     Assert-Contains -Name 'support matrix' -Text $text -Expected 'Windows 7 SP1 through Windows 11 x86/x64'
 }
 
-foreach ($expected in @('Windows 7 SP1 x86', 'Windows 7 SP1 x64', 'Windows 8 x86', 'Windows 8 x64', 'Windows 8.1 x86', 'Windows 8.1 x64', 'Windows 10 x86', 'Windows 10 x64', 'Windows 11 x64', 'WMF 5.1', 'KB4490628', 'KB4474419')) {
+foreach ($expected in @('Windows 7 SP1 x86', 'Windows 7 SP1 x64', 'Windows 8 x86', 'Windows 8 x64', 'Windows 8.1 x86', 'Windows 8.1 x64', 'Windows 10 x86', 'Windows 10 x64', 'Windows 11 x64', 'Windows 11 26H1', 'WMF 5.1', 'KB4490628', 'KB4474419')) {
     Assert-Contains -Name 'Windows 7-11 support documentation' -Text $supportDoc -Expected $expected
 }
 Assert-NotContains -Name 'Windows 7-11 support documentation' -Text $supportDoc -Unexpected '32-bit Windows is not supported'
@@ -90,6 +65,7 @@ Assert-NotContains -Name 'Windows 7-11 support documentation' -Text $supportDoc 
 foreach ($expected in @('PowerShell 5.1 or newer is required', '$PSVersionTable.PSVersion.Major')) {
     Assert-Contains -Name 'CMD PowerShell preflight' -Text $setupCmd -Expected $expected
 }
+Assert-NotContains -Name 'CMD automatic architecture selection' -Text $setupCmd -Unexpected '-Architecture'
 
 foreach ($expected in @('Test-SupportedWindowsVersion', 'Test-Windows7Prerequisites', 'Assert-AntrevaDeskWindowsSupport', 'Win32_OperatingSystem', 'OSArchitecture', 'ServicePackMajorVersion', 'Get-HotFix', 'KB4490628', 'KB4474419', 'WMF 5.1')) {
     Assert-Contains -Name 'PowerShell installer preflight' -Text $setupScript -Expected $expected
@@ -108,28 +84,28 @@ Assert-Contains -Name 'pilot bundle RustDesk version' -Text $bundleScript -Expec
 foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.exe', '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7')) {
     Assert-Contains -Name 'pilot bundle architecture payloads' -Text $bundleScript -Expected $expected
 }
-foreach ($expected in @('AntrevaDesk-PayloadValidation.ps1', '$SetupStageDir')) {
-    Assert-Contains -Name 'pilot bundle payload validation helper' -Text $bundleScript -Expected $expected
+Assert-Contains -Name 'pilot bundle pinned publisher' -Text $bundleScript -Expected '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
+foreach ($expected in @(
+    'Antreva-Remote-Pilot-Setup.cmd',
+    'Configure-And-Launch-Antreva-Remote-Pilot.ps1',
+    'AntrevaDesk-PayloadValidation.ps1',
+    'packaging\pilot\README.md',
+    '$PayloadStageDir',
+    'Compress-Archive'
+)) {
+    Assert-Contains -Name 'PowerShell bundle contents' -Text $bundleScript -Expected $expected
 }
 foreach ($expected in @('Get-AntrevaDeskSignatureDecision', 'Assert-AntrevaDeskPayloadAuthenticity', 'UntrustedRoot', 'PartialChain', 'UnknownError', 'PinnedOffline')) {
     Assert-Contains -Name 'offline-safe payload validation' -Text $payloadValidation -Expected $expected
 }
-foreach ($expected in @('AntrevaDesk ArchitecturePage', 'ARCH_X64', 'ARCH_X86', 'RunningX64', '-Architecture', '-PortableExe')) {
-    Assert-Contains -Name 'NSIS architecture selection' -Text $nsisScript -Expected $expected
+foreach ($expected in @('Get-PermanentSupportPassword', 'Read-Host -AsSecureString', 'Enter the permanent support password', 'Confirm the permanent support password')) {
+    Assert-Contains -Name 'visible PowerShell password collection' -Text $setupScript -Expected $expected
 }
-Assert-BitmapDimensions -Name 'NSIS header logo' -Path 'packaging\antrevadesk\assets\banner.bmp' -ExpectedWidth 150 -ExpectedHeight 57
-Assert-BitmapDimensions -Name 'NSIS welcome side logo' -Path 'packaging\antrevadesk\assets\dialog.bmp' -ExpectedWidth 164 -ExpectedHeight 314
-foreach ($expected in @('RequestExecutionLevel admin', 'AntrevaDesk PasswordPage', 'PASSWORD_ONE', 'PASSWORD_TWO', 'Permanent support password', 'nsExec::ExecToLog', 'SetEnvironmentVariable', 'ANTREVA_DESK_PASSWORD', '-PasswordEnvironmentVariable', '-NonInteractive')) {
-    Assert-Contains -Name 'NSIS GUI-only managed setup' -Text $nsisScript -Expected $expected
-}
-foreach ($expected in @('ReadEnvStr $SetupLogPath "ProgramData"', '-SetupLogPath "$SetupLogPath"', 'ExecShell "open" "$SetupLogPath"', 'Quit', 'installed and configured successfully')) {
-    Assert-Contains -Name 'NSIS actionable failure logging' -Text $nsisScript -Expected $expected
-}
-Assert-NotContains -Name 'NSIS false-success finish text' -Text $nsisScript -Unexpected 'If setup reported an error'
-Assert-NotContains -Name 'NSIS visible PowerShell execution' -Text $nsisScript -Unexpected 'ExecWait ''"powershell.exe"'
-foreach ($expected in @('-PasswordEnvironmentVariable', 'Get-PermanentSupportPassword', 'ANTREVA_DESK_PASSWORD')) {
-    Assert-Contains -Name 'PowerShell installer-driven password support' -Text $setupScript -Expected $expected
-}
+Assert-NotContains -Name 'Windows 7 architecture-neutral prerequisite text' -Text $setupScript -Unexpected 'Windows 7 SP1 x64 support requires'
+Assert-NotContains -Name 'repo-root Windows 7 architecture-neutral prerequisite text' -Text $repoSetupScript -Unexpected 'Windows 7 SP1 x64 support requires'
+Assert-NotContains -Name 'active workflow NSIS dependency' -Text $workflow -Unexpected 'Install NSIS'
+Assert-NotContains -Name 'active workflow GUI installer' -Text $workflow -Unexpected 'AntrevaDesk-Setup'
+Assert-Contains -Name 'active workflow PowerShell zip' -Text $workflow -Expected 'Antreva-Desk-1.0.3-Windows.zip'
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskWindowsSupport.ps1'
 Assert-Contains -Name 'release checklist certification' -Text $releaseChecklist -Expected 'Windows 7 SP1 through Windows 11 x86/x64 support matrix has been certified'
 

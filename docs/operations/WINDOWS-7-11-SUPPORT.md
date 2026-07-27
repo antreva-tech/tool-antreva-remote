@@ -1,8 +1,9 @@
 # Windows 7-11 Support
 
-Antreva Desk 1.0.2 supports Windows 7 SP1 through Windows 11 x86/x64 for the
-managed-access GUI installer. The installer includes both 32-bit and 64-bit
-RustDesk payloads and presents an architecture selection page before setup.
+Antreva Desk 1.0.3 supports Windows 7 SP1 through Windows 11 x86/x64 for the
+managed-access PowerShell installer. The ZIP includes both 32-bit and 64-bit
+RustDesk payloads, and the setup automatically selects the architecture that
+matches Windows.
 
 ## Supported Client Matrix
 
@@ -18,9 +19,10 @@ RustDesk payloads and presents an architecture selection page before setup.
 | Windows 10 x64 | x64 | Built-in PowerShell 5.1 or newer |
 | Windows 11 x64 | x64 | Built-in PowerShell 5.1 or newer |
 
-On 32-bit Windows, the installer disables the 64-bit option. On 64-bit Windows,
-the installer selects 64-bit by default while still allowing a deliberate
-32-bit override.
+The Windows 11 certification target includes Windows 11 26H1. On 32-bit
+Windows, setup automatically selects x86. On 64-bit Windows, setup
+automatically selects x64. A technician can still use the PowerShell
+`-Architecture` parameter for a deliberate diagnostic override.
 
 ## Windows 7 Requirements
 
@@ -31,7 +33,8 @@ Windows 7 is end-of-life and must be prepared before Antreva Desk onboarding:
    or newer.
 3. Install SHA-2 signing support updates KB4490628 and KB4474419.
 4. Reboot after installing prerequisites.
-5. Run `AntrevaDesk-Setup-1.0.2.exe`.
+5. Extract `Antreva-Desk-1.0.3-Windows.zip` and run
+   `Antreva-Remote-Pilot-Setup.cmd`.
 
 The setup script checks these prerequisites before installing the managed
 support service. Missing Windows 7 prerequisites stop setup with a visible
@@ -41,7 +44,7 @@ message instead of continuing into a partial install.
 
 The installer must fail before install for:
 
-- Choosing the 64-bit payload on 32-bit Windows.
+- Forcing the 64-bit payload on 32-bit Windows.
 - Windows 7 without Service Pack 1.
 - Windows 7 missing WMF 5.1.
 - Windows 7 missing KB4490628 or KB4474419.
@@ -62,6 +65,7 @@ installer on:
 - Windows 10 x86.
 - Windows 10 x64.
 - Windows 11 x64.
+- Windows 11 26H1 x64 as the current latest-version target.
 
 For each supported OS, verify install, app launch, visible tray, remote
 control, bidirectional file transfer, clean disconnect, and post-reboot server

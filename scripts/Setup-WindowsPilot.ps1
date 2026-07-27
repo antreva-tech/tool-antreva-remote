@@ -134,7 +134,7 @@ function Test-SupportedWindowsVersion {
     $isWindows10Or11 = $version.Major -eq 10
 
     if ($isWindows7 -and $servicePackMajor -lt 1) {
-        throw 'Windows 7 support requires Windows 7 SP1 x64. Install Service Pack 1, then run this setup again.'
+        throw 'Windows 7 support requires Windows 7 SP1. Install Service Pack 1, then run this setup again.'
     }
 
     if (-not ($isWindows7 -or $isWindows8 -or $isWindows81 -or $isWindows10Or11)) {
@@ -152,7 +152,7 @@ function Test-SupportedWindowsVersion {
 function Test-Windows7Prerequisites {
     $version = $PSVersionTable.PSVersion
     if ($version.Major -lt 5 -or ($version.Major -eq 5 -and $version.Minor -lt 1)) {
-        throw 'Windows 7 SP1 x64 support requires WMF 5.1 / PowerShell 5.1. Install Windows Management Framework 5.1, then run this setup again.'
+        throw 'Windows 7 SP1 support requires WMF 5.1 / PowerShell 5.1. Install Windows Management Framework 5.1, then run this setup again.'
     }
 
     $missingHotFixes = @()
@@ -164,7 +164,7 @@ function Test-Windows7Prerequisites {
     }
 
     if ($missingHotFixes.Count -gt 0) {
-        throw "Windows 7 SP1 x64 support requires SHA-2 signing updates KB4490628 and KB4474419. Missing: $($missingHotFixes -join ', ')."
+        throw "Windows 7 SP1 support requires SHA-2 signing updates KB4490628 and KB4474419. Missing: $($missingHotFixes -join ', ')."
     }
 }
 
