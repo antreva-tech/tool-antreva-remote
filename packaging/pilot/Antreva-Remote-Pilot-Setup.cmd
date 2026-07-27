@@ -66,8 +66,6 @@ exit /b 0
 echo Verifying Antreva Desk %ANTREVA_VERSION% Command Prompt bundle...
 call :SelectArchitecture
 if errorlevel 1 exit /b 1
-call :PreflightWindows
-if errorlevel 1 exit /b 1
 call :VerifyPayloadHash
 if errorlevel 1 exit /b 1
 set "ELEVATE_SCRIPT=%TEMP%\AntrevaDesk-Elevate-Verify-%RANDOM%-%RANDOM%.vbs"

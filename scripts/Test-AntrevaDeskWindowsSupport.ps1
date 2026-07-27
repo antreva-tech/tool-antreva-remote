@@ -80,6 +80,21 @@ foreach ($expected in @(
     Assert-Contains -Name 'Command Prompt compatibility and payload preflight' -Text $setupCmd -Expected $expected
 }
 
+$verifyBundleStart = $setupCmd.IndexOf("`n:verify_bundle", [StringComparison]::Ordinal)
+$runSetupStart = $setupCmd.IndexOf("`n:RunSetup", [StringComparison]::Ordinal)
+$selectArchitectureStart = $setupCmd.IndexOf("`n:SelectArchitecture", [StringComparison]::Ordinal)
+if ($verifyBundleStart -lt 0 -or $runSetupStart -le $verifyBundleStart -or $selectArchitectureStart -le $runSetupStart) {
+    throw 'Windows support check failed: Command Prompt setup control-flow labels are missing or out of order.'
+}
+$verifyBundleStart++
+$runSetupStart++
+$selectArchitectureStart++
+$verifyBundleBlock = $setupCmd.Substring($verifyBundleStart, $runSetupStart - $verifyBundleStart)
+$runSetupBlock = $setupCmd.Substring($runSetupStart, $selectArchitectureStart - $runSetupStart)
+Assert-NotContains -Name 'CI bundle verification client OS independence' -Text $verifyBundleBlock -Unexpected 'call :PreflightWindows'
+Assert-Contains -Name 'real installation client OS preflight' -Text $runSetupBlock -Expected 'call :PreflightWindows'
+Assert-Contains -Name 'real installation Windows Server rejection' -Text $setupCmd -Expected 'Windows Server editions are not supported.'
+
 Assert-Contains -Name 'pilot bundle RustDesk version' -Text $bundleScript -Expected '$RustDeskVersion = ''1.4.8'''
 foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.exe', '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7')) {
     Assert-Contains -Name 'pilot bundle architecture payloads' -Text $bundleScript -Expected $expected
