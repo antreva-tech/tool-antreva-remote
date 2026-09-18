@@ -264,17 +264,29 @@ call :VerifyFileHash "%INSTALLED_EXE%" "%PAYLOAD_HASH%" "installed RustDesk exec
 exit /b %ERRORLEVEL%
 
 :VerifyFileHash
+rem VerifyFileHash hashes %~1 with certutil SHA-256 and compares it to pinned hash %~2 (%~3 is the label).
+rem Legacy certutil prints byte-spaced hashes; compact builds print 64 hex characters. Both must compare equal.
 where.exe certutil.exe >nul 2>&1
 if errorlevel 1 (
   call :Fail "Windows certutil.exe is required to verify the %~3."
   exit /b 1
 )
 set "HASH_OUTPUT=%TEMP%\AntrevaDesk-Hash-%RANDOM%-%RANDOM%.txt"
+set "ACTUAL_HASH="
 certutil.exe -hashfile "%~1" SHA256 > "%HASH_OUTPUT%" 2>&1
 if errorlevel 1 goto hash_failed
-find.exe /I "%~2" "%HASH_OUTPUT%" >nul
-if errorlevel 1 goto hash_mismatch
+for /f "usebackq skip=1 tokens=* delims=" %%H in ("%HASH_OUTPUT%") do (
+  if not defined ACTUAL_HASH set "ACTUAL_HASH=%%H"
+)
+if not defined ACTUAL_HASH goto hash_failed
+set "ACTUAL_HASH=%ACTUAL_HASH: =%"
+if "%ACTUAL_HASH:~63,1%"=="" goto hash_failed
+if not "%ACTUAL_HASH:~64,1%"=="" goto hash_failed
+echo(%ACTUAL_HASH%| findstr.exe /I /R /X /C:"[0-9A-Fa-f][0-9A-Fa-f]*" >nul
+if errorlevel 1 goto hash_failed
+if /I not "%ACTUAL_HASH%"=="%~2" goto hash_mismatch
 del /q "%HASH_OUTPUT%" >nul 2>&1
+set "ACTUAL_HASH="
 call :Log "Verified the exact pinned SHA-256 for the %~3."
 exit /b 0
 
