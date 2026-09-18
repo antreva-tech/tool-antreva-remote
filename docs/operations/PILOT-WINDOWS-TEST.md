@@ -1,6 +1,6 @@
 # Pilot Windows Test
 
-This test uses the Antreva Desk 1.0.4 test artifact. Ordinary CI artifacts use
+This test uses the Antreva Desk 1.0.5 test artifact. Ordinary CI artifacts use
 the official RustDesk publisher signature and are not client-ready releases.
 Only the protected manual release workflow may publish after Antreva signing
 and live certification evidence pass.
@@ -58,7 +58,7 @@ not a substitute for the Windows certification matrix below.
 
 Use two machines on different networks if possible.
 
-1. On the client machine, extract `Antreva-Desk-1.0.4-Windows.zip` and run
+1. On the client machine, extract `Antreva-Desk-1.0.5-Windows.zip` and run
    `Antreva-Remote-Pilot-Setup.cmd` during authorized onboarding.
 2. Confirm setup selects the architecture that matches Windows.
 3. Confirm the setup log records successful verification of the exact pinned
@@ -85,7 +85,7 @@ Use two machines on different networks if possible.
     are still visible, authentication works, and server/relay/key values remain
     exact.
 
-The public 1.0.4 hard gate requires clean-install and upgrade runs on Windows 7
+The public 1.0.5 hard gate requires clean-install and upgrade runs on Windows 7
 SP1 x86/x64 and Windows 10 22H2 x86/x64. It also requires one Windows 10
 standard-user run using separate administrator credentials. Continue broader
 matrix checks on Windows 8, 8.1, and certified Windows 11 builds. Every VM must
@@ -109,6 +109,6 @@ bidirectional file transfer.
 - Windows briefly exposes the password in the RustDesk CLI process command
   line while the daemon receives it; logs and result files do not contain it.
 - Windows 7 x86 launch of the pinned 1.4.8 Sciter payload is a hard release
-  gate. Failure blocks 1.0.4 and requires a separate payload-selection task.
+  gate. Failure blocks 1.0.5 and requires a separate payload-selection task.
 - The final Antreva-branded build still needs the Windows build toolchain,
   branding assets, and Antreva code-signing certificate.

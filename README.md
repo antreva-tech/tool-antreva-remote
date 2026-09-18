@@ -70,7 +70,7 @@ PowerShell.
 
 ## Installer Downloads
 
-GitHub Actions builds the Antreva Desk 1.0.4 Command Prompt installer bundle
+GitHub Actions builds the Antreva Desk 1.0.5 Command Prompt installer bundle
 on pull requests to `main` and on pushes to `main`.
 
 - Pull requests and pushes upload 30-day workflow artifacts for controlled
@@ -87,8 +87,8 @@ client operating-system preflight so it can run on GitHub's Windows Server
 runner. Running the installer normally still performs the full Windows client
 preflight and rejects Windows Server editions.
 
-The test bundle is `Antreva-Desk-1.0.4-Windows.zip`. A public release may use
-the immutable tag `antreva-desk-1.0.4` only after the manual gates pass.
+The test bundle is `Antreva-Desk-1.0.5-Windows.zip`. A public release may use
+the immutable tag `antreva-desk-1.0.5` only after the manual gates pass.
 Extract the ZIP and double-click `Antreva-Remote-Pilot-Setup.cmd` during
 authorized onboarding. Alternate administrator credentials are supported:
 machine-wide setup runs elevated, while the original user waits for the result

@@ -50,7 +50,7 @@ $generatedSetupPath = Join-Path ([System.IO.Path]::GetTempPath()) "AntrevaDesk-W
     -PolicyPath (Join-Path $Root 'config\antreva-client-policy.json') `
     -TemplatePath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd.in') `
     -OutputPath $generatedSetupPath `
-    -Version '1.0.4' | Out-Null
+    -Version '1.0.5' | Out-Null
 $setupCmd = Get-Content -LiteralPath $generatedSetupPath -Raw
 Remove-Item -LiteralPath $generatedSetupPath -Force
 $bundleScript = Read-RepoFile 'scripts\Build-PilotBundle.ps1'
@@ -121,7 +121,7 @@ foreach ($unexpected in @('Configure-And-Launch-Antreva-Remote-Pilot.ps1', 'Antr
 }
 Assert-NotContains -Name 'active workflow NSIS dependency' -Text $workflow -Unexpected 'Install NSIS'
 Assert-NotContains -Name 'active workflow GUI installer' -Text $workflow -Unexpected 'AntrevaDesk-Setup'
-Assert-Contains -Name 'active workflow Command Prompt zip' -Text $workflow -Expected 'Antreva-Desk-1.0.4-Windows.zip'
+Assert-Contains -Name 'active workflow Command Prompt zip' -Text $workflow -Expected 'Antreva-Desk-1.0.5-Windows.zip'
 Assert-Contains -Name 'active workflow CMD verification' -Text $workflow -Expected 'shell: cmd'
 Assert-Contains -Name 'active workflow zero-PowerShell verification mode' -Text $workflow -Expected '--verify-bundle'
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskWindowsSupport.ps1'

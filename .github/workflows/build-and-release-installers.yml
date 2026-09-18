@@ -35,21 +35,21 @@ jobs:
 
       - name: Verify x64 Command Prompt bundle without installing
         shell: cmd
-        run: artifacts\Antreva-Desk-1.0.4-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
+        run: artifacts\Antreva-Desk-1.0.5-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
 
       - name: Verify simulated x86 Command Prompt bundle without installing
         shell: cmd
         run: |
           set PROCESSOR_ARCHITECTURE=x86
           set PROCESSOR_ARCHITEW6432=
-          artifacts\Antreva-Desk-1.0.4-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
+          artifacts\Antreva-Desk-1.0.5-Windows\Antreva-Remote-Pilot-Setup.cmd --verify-bundle
 
       - name: Upload 30-day test artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Antreva-Desk-1.0.4-Windows
+          name: Antreva-Desk-1.0.5-Windows
           path: |
-            artifacts/Antreva-Desk-1.0.4-Windows.zip
-            artifacts/Antreva-Desk-1.0.4-Windows.sha256.txt
+            artifacts/Antreva-Desk-1.0.5-Windows.zip
+            artifacts/Antreva-Desk-1.0.5-Windows.sha256.txt
           if-no-files-found: error
           retention-days: 30

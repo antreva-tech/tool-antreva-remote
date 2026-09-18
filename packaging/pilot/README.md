@@ -1,6 +1,6 @@
-# Antreva Desk 1.0.4 Managed Access Test Bundle
+# Antreva Desk 1.0.5 Managed Access Test Bundle
 
-`Antreva-Desk-1.0.4-Windows.zip` is a zero-PowerShell Command Prompt bundle
+`Antreva-Desk-1.0.5-Windows.zip` is a zero-PowerShell Command Prompt bundle
 for controlled Windows certification. Ordinary pull-request and `main`
 workflows upload it as a 30-day test artifact. It is not client-ready and must
 not be presented as the latest public release unless the separate protected
@@ -66,5 +66,5 @@ not Windows certification.
 ## Release Boundary
 
 The pinned x86 Sciter payload must successfully launch on live Windows 7 SP1
-x86 before 1.0.4 can be public. If it fails, block 1.0.4 and open a separate
+x86 before 1.0.5 can be public. If it fails, block 1.0.5 and open a separate
 pinned-payload selection task; do not silently downgrade the payload.
