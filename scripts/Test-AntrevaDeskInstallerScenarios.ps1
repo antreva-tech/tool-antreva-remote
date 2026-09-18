@@ -51,6 +51,53 @@ function Test-InstallState {
         $ServiceValid
 }
 
+<#
+.SYNOPSIS
+Compare a certutil SHA-256 hash line to a pinned compact hash.
+
+.DESCRIPTION
+Mirrors :VerifyFileHash in Antreva-Remote-Pilot-Setup.cmd.in: skip the header,
+strip spaces from the hash line, require exactly 64 hex characters, then
+compare case-insensitively with the pinned value. Exit 0 on match, 1 on a
+valid but different hash, and 2 when the line cannot be normalized.
+#>
+function Invoke-NormalizedCertUtilCompare {
+    param(
+        [Parameter(Mandatory = $true)][string]$HashLine,
+        [Parameter(Mandatory = $true)][string]$ExpectedHash
+    )
+
+    $fixtureDir = Join-Path $testRoot 'hash-fixtures'
+    New-Item -ItemType Directory -Force -Path $fixtureDir | Out-Null
+    $outputPath = Join-Path $fixtureDir 'certutil-output.txt'
+    $scriptPath = Join-Path $fixtureDir 'compare-hash.cmd'
+    @(
+        'SHA256 hash of file payload.exe:'
+        $HashLine
+        'CertUtil: -hashfile command completed successfully.'
+    ) | Set-Content -LiteralPath $outputPath -Encoding ASCII
+
+    @"
+@echo off
+setlocal EnableExtensions DisableDelayedExpansion
+set "ACTUAL_HASH="
+for /f "usebackq skip=1 tokens=* delims=" %%H in ("$outputPath") do (
+  if not defined ACTUAL_HASH set "ACTUAL_HASH=%%H"
+)
+if not defined ACTUAL_HASH exit /b 2
+set "ACTUAL_HASH=%ACTUAL_HASH: =%"
+if "%ACTUAL_HASH:~63,1%"=="" exit /b 2
+if not "%ACTUAL_HASH:~64,1%"=="" exit /b 2
+echo(%ACTUAL_HASH%| findstr.exe /I /R /X /C:"[0-9A-Fa-f][0-9A-Fa-f]*" >nul
+if errorlevel 1 exit /b 2
+if /I not "%ACTUAL_HASH%"=="%~1" exit /b 1
+exit /b 0
+"@ | Set-Content -LiteralPath $scriptPath -Encoding ASCII
+
+    & cmd.exe /d /c "`"$scriptPath`" `"$ExpectedHash`"" | Out-Null
+    return $LASTEXITCODE
+}
+
 New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
 try {
     $generatedPath = Join-Path $testRoot 'Antreva-Remote-Pilot-Setup.cmd'
@@ -78,11 +125,16 @@ try {
         '%PUBLIC%\Desktop',
         '%ProgramData%\Microsoft\Windows\Start Menu\Programs\Antreva',
         'The original user session will wait here',
-        'start "" "%INSTALLED_EXE%"'
+        'start "" "%INSTALLED_EXE%"',
+        'set "ACTUAL_HASH=%ACTUAL_HASH: =%"',
+        'if "%ACTUAL_HASH:~63,1%"=="" goto hash_failed',
+        'if not "%ACTUAL_HASH:~64,1%"=="" goto hash_failed',
+        'findstr.exe /I /R /X /C:"[0-9A-Fa-f][0-9A-Fa-f]*"',
+        'if /I not "%ACTUAL_HASH%"=="%~2" goto hash_mismatch'
     )) {
         Assert-True -Condition ($generated.Contains($requiredText)) -Message "generated CMD is missing '$requiredText'."
     }
-    foreach ($forbiddenText in @('powershell.exe', 'pwsh.exe', '.ps1', 'allow-blank', 'taskkill.exe /IM "%PAYLOAD_FILE%"')) {
+    foreach ($forbiddenText in @('powershell.exe', 'pwsh.exe', '.ps1', 'allow-blank', 'taskkill.exe /IM "%PAYLOAD_FILE%"', 'find.exe /I "%~2" "%HASH_OUTPUT%"')) {
         Assert-True -Condition (-not $generated.Contains($forbiddenText)) -Message "generated CMD contains forbidden text '$forbiddenText'."
     }
     $installerRunAt = $generated.IndexOf('AntrevaDesk-ProcessWrapper.vbs" "%INSTALL_OUTPUT%"')
@@ -99,6 +151,15 @@ try {
     Assert-True -Condition (-not (Test-InstallState $false $payloadHash $payloadHash $true)) -Message 'pre-existing executable satisfied installation without installer completion.'
     Assert-True -Condition (-not (Test-InstallState $true $payloadHash ('B' * 64) $true)) -Message 'wrong installed hash was accepted.'
     Assert-True -Condition (Test-InstallState $true $payloadHash $payloadHash $true) -Message 'upgrade to exact payload state was rejected.'
+
+    $pinnedX64Hash = 'F0053229FA2A2459C8B86F326C3E7423018A72F010F9758DC21BE171B112D1B2'
+    $legacySpacedHash = 'f0 05 32 29 fa 2a 24 59 c8 b8 6f 32 6c 3e 74 23 01 8a 72 f0 10 f9 75 8d c2 1b e1 71 b1 12 d1 b2'
+    $compactHash = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
+    $changedHash = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b3'
+    Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine $legacySpacedHash -ExpectedHash $pinnedX64Hash) -eq 0) -Message 'legacy space-separated certutil SHA-256 was rejected.'
+    Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine $compactHash -ExpectedHash $pinnedX64Hash) -eq 0) -Message 'compact certutil SHA-256 was rejected.'
+    Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine $changedHash -ExpectedHash $pinnedX64Hash) -eq 1) -Message 'changed payload hash was accepted.'
+    Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine 'not-a-sha256' -ExpectedHash $pinnedX64Hash) -eq 2) -Message 'unparseable certutil output was treated as a match.'
 
     $unsafePolicy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
     $unsafePolicy.rustdeskOptions.'custom-rendezvous-server' = 'host&whoami'
