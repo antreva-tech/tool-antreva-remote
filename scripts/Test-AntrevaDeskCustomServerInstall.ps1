@@ -46,7 +46,7 @@ $generatedSetupPath = Join-Path ([System.IO.Path]::GetTempPath()) "AntrevaDesk-C
     -PolicyPath (Join-Path $Root 'config\antreva-client-policy.json') `
     -TemplatePath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd.in') `
     -OutputPath $generatedSetupPath `
-    -Version '1.0.4' | Out-Null
+    -Version '1.0.5' | Out-Null
 $packagedSetup = Get-Content -LiteralPath $generatedSetupPath -Raw
 Remove-Item -LiteralPath $generatedSetupPath -Force
 $repositoryTest = Read-RepoFile 'scripts\Test-Repository.ps1'

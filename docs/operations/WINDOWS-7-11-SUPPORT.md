@@ -1,6 +1,6 @@
 # Windows 7-11 Support
 
-Antreva Desk 1.0.4 is certified by explicit Windows client build number, not
+Antreva Desk 1.0.5 is certified by explicit Windows client build number, not
 marketing product-name heuristics. The Command Prompt installer covers
 Windows 7 SP1 through Windows 11 x86/x64 only for the allowlisted builds below.
 Managed clients do not need PowerShell.
@@ -40,7 +40,7 @@ Windows 7 is end-of-life and must be prepared before Antreva Desk onboarding:
 1. Install Windows 7 Service Pack 1.
 2. Install SHA-2 signing support updates KB4490628 and KB4474419.
 3. Reboot after installing prerequisites.
-4. Extract `Antreva-Desk-1.0.4-Windows.zip` and run
+4. Extract `Antreva-Desk-1.0.5-Windows.zip` and run
    `Antreva-Remote-Pilot-Setup.cmd`.
 
 The setup script checks these prerequisites before installing the managed
@@ -61,7 +61,7 @@ The installer must fail before install for:
 
 ## Certification Checklist
 
-Before distributing 1.0.4, run clean-install and upgrade certification on:
+Before distributing 1.0.5, run clean-install and upgrade certification on:
 
 - Windows 7 SP1 x86 with KB4490628 and KB4474419 installed (including the hard
   1.4.8 Sciter launch gate).
@@ -83,5 +83,5 @@ For each VM, verify clean/upgrade behavior as applicable, post-reboot automatic
 running service with the exact image path, original-user Public Desktop and
 Start Menu visibility, visible tray, exact server/relay/key persistence,
 password authentication, remote control, bidirectional file transfer, and clean
-disconnect. If Windows 7 x86 cannot launch the pinned payload, block 1.0.4 and
+disconnect. If Windows 7 x86 cannot launch the pinned payload, block 1.0.5 and
 open a separate payload-selection task instead of silently downgrading.

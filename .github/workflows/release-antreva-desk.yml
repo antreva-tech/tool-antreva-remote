@@ -20,9 +20,9 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  release_tag: antreva-desk-1.0.4
-  release_title: Antreva Desk 1.0.4
-  bundle_name: Antreva-Desk-1.0.4-Windows
+  release_tag: antreva-desk-1.0.5
+  release_title: Antreva Desk 1.0.5
+  bundle_name: Antreva-Desk-1.0.5-Windows
 
 jobs:
   release:
@@ -55,7 +55,7 @@ jobs:
             throw 'Certification evidence SHA-256 is invalid.'
           }
           if (git tag --list '${{ env.release_tag }}') {
-            throw 'The 1.0.4 tag already exists. Release tags are immutable.'
+            throw 'The 1.0.5 tag already exists. Release tags are immutable.'
           }
 
       - name: Validate source and download pinned upstream payloads
@@ -117,7 +117,7 @@ jobs:
       - name: Verify and attach Windows certification evidence
         shell: pwsh
         run: |
-          $evidencePath = 'artifacts\Antreva-Desk-1.0.4-Windows-Certification.zip'
+          $evidencePath = 'artifacts\Antreva-Desk-1.0.5-Windows-Certification.zip'
           Invoke-WebRequest -Uri '${{ inputs.certification_evidence_url }}' -OutFile $evidencePath
           $actualHash = (Get-FileHash -Algorithm SHA256 $evidencePath).Hash
           if ($actualHash -ne '${{ inputs.certification_evidence_sha256 }}') {
@@ -130,7 +130,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           @"
-          Antreva Desk 1.0.4 certified managed-access Command Prompt installer.
+          Antreva Desk 1.0.5 certified managed-access Command Prompt installer.
 
           The Windows payloads were signed with the protected Antreva signing certificate and verified against the pinned Antreva signer. The attached certification archive covers the required Windows 7 SP1 and Windows 10 22H2 clean-install, upgrade, reboot, alternate-administrator, remote-control, password, and bidirectional file-transfer gates.
 
@@ -139,7 +139,7 @@ jobs:
           gh release create '${{ env.release_tag }}' `
             "artifacts/${{ env.bundle_name }}.zip" `
             "artifacts/${{ env.bundle_name }}.sha256.txt" `
-            'artifacts/Antreva-Desk-1.0.4-Windows-Certification.zip' `
+            'artifacts/Antreva-Desk-1.0.5-Windows-Certification.zip' `
             --title '${{ env.release_title }}' `
             --notes-file release-notes.md `
             --target $env:GITHUB_SHA `

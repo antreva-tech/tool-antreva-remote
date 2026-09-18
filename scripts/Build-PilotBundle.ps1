@@ -24,7 +24,7 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
 }
 
 $RustDeskVersion = '1.4.8'
-$AntrevaDeskVersion = '1.0.4'
+$AntrevaDeskVersion = '1.0.5'
 $BundleName = "Antreva-Desk-$AntrevaDeskVersion-Windows"
 $BundleDir = Join-Path $OutputDir $BundleName
 $ZipPath = Join-Path $OutputDir "$BundleName.zip"

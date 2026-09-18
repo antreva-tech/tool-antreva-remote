@@ -101,12 +101,12 @@ exit /b 0
 New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
 try {
     $generatedPath = Join-Path $testRoot 'Antreva-Remote-Pilot-Setup.cmd'
-    & $generatorPath -PolicyPath $policyPath -TemplatePath $templatePath -OutputPath $generatedPath -Version '1.0.4' | Out-Null
+    & $generatorPath -PolicyPath $policyPath -TemplatePath $templatePath -OutputPath $generatedPath -Version '1.0.5' | Out-Null
     $generated = Get-Content -LiteralPath $generatedPath -Raw
     $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 
     Assert-True -Condition (-not ($generated -match '@@[A-Z0-9_]+@@')) -Message 'generated CMD has unresolved placeholders.'
-    Assert-True -Condition ($generated.Contains('set "ANTREVA_VERSION=1.0.4"')) -Message 'generated CMD version is not 1.0.4.'
+    Assert-True -Condition ($generated.Contains('set "ANTREVA_VERSION=1.0.5"')) -Message 'generated CMD version is not 1.0.5.'
     foreach ($property in $policy.rustdeskOptions.PSObject.Properties) {
         $apply = "call :SetRustDeskOption `"$($property.Name)`" `"$([string]$property.Value)`""
         $verify = "call :VerifyRustDeskOption `"$($property.Name)`" `"$([string]$property.Value)`""
