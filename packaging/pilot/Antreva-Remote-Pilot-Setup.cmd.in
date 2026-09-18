@@ -362,8 +362,11 @@ taskkill.exe /IM rustdesk.exe /F >nul 2>&1
 set "INSTALL_OUTPUT=%TEMP%\AntrevaDesk-Install-%RANDOM%-%RANDOM%.txt"
 del /q "%INSTALL_OUTPUT%" >nul 2>&1
 call :Log "Installing the RustDesk managed service with a 180-second completion timeout."
-cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-ProcessWrapper.vbs" "%INSTALL_OUTPUT%" "%PAYLOAD_PATH%" "180" "--silent-install"
+rem RustDesk --silent-install does not exit; it continues into the app UI. printer=0 skips the Win10 printer driver.
+cscript.exe //nologo "%SCRIPT_DIR%AntrevaDesk-ProcessWrapper.vbs" "%INSTALL_OUTPUT%" "%PAYLOAD_PATH%" "180" --detached --silent-install printer=0
 set "INSTALL_EXIT=%ERRORLEVEL%"
+set "INSTALL_PID="
+if exist "%INSTALL_OUTPUT%" for /f "usebackq tokens=1,* delims==" %%A in ("%INSTALL_OUTPUT%") do if /I "%%A"=="PID" set "INSTALL_PID=%%B"
 if "%LOG_ENABLED%"=="1" if exist "%INSTALL_OUTPUT%" type "%INSTALL_OUTPUT%" >> "%LOG_PATH%"
 if not "%INSTALL_EXIT%"=="0" (
   if exist "%INSTALL_OUTPUT%" type "%INSTALL_OUTPUT%"
@@ -371,26 +374,29 @@ if not "%INSTALL_EXIT%"=="0" (
   call :Fail "RustDesk installer failed, reported failure output, or exceeded 180 seconds."
   exit /b 1
 )
-del /q "%INSTALL_OUTPUT%" >nul 2>&1
 
 set /a INSTALL_VERIFY_COUNT=0
 :wait_for_installed_state
 call :FindInstalledRustDesk
 if not defined INSTALLED_EXE goto installed_state_retry
 call :VerifyInstalledHash
-if errorlevel 1 exit /b 1
+if errorlevel 1 goto install_verify_failed
 call :VerifyRustDeskService
 if not errorlevel 1 goto installed_state_ready
 :installed_state_retry
 set /a INSTALL_VERIFY_COUNT+=1
-if %INSTALL_VERIFY_COUNT% GEQ 30 (
-  call :Fail "RustDesk installation did not produce the exact payload and a matching automatic running service."
-  exit /b 1
-)
+if %INSTALL_VERIFY_COUNT% GEQ 180 goto install_verify_failed
 timeout.exe /t 1 /nobreak >nul
 goto wait_for_installed_state
 
+:install_verify_failed
+if defined INSTALL_PID taskkill.exe /F /PID %INSTALL_PID% >nul 2>&1
+del /q "%INSTALL_OUTPUT%" >nul 2>&1
+call :Fail "RustDesk installation did not produce the exact payload and a matching automatic running service."
+exit /b 1
+
 :installed_state_ready
+del /q "%INSTALL_OUTPUT%" >nul 2>&1
 call :Log "Verified installed executable hash and RustDesk automatic running service."
 exit /b 0
 

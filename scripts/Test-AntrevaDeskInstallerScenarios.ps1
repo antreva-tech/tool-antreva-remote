@@ -116,7 +116,7 @@ try {
 
     foreach ($requiredText in @(
         '%ProgramW6432%\RustDesk\RustDesk.exe',
-        'AntrevaDesk-ProcessWrapper.vbs" "%INSTALL_OUTPUT%" "%PAYLOAD_PATH%" "180"',
+        'AntrevaDesk-ProcessWrapper.vbs" "%INSTALL_OUTPUT%" "%PAYLOAD_PATH%" "180" --detached --silent-install printer=0',
         'call :VerifyInstalledHash',
         'AntrevaDesk-VerifyService.vbs',
         'RustDesk daemon did not acknowledge the current password command.',
@@ -242,6 +242,15 @@ try {
     Invoke-ExpectExit 0 $cscript @('//nologo', $processWrapper, $processOutput, $env:ComSpec, '5', '/d', '/c', 'echo completed') 'installer completion'
     Invoke-ExpectExit 125 $cscript @('//nologo', $processWrapper, $processOutput, $env:ComSpec, '5', '/d', '/c', 'echo Installation failed') 'failed installer output'
     Invoke-ExpectExit 124 $cscript @('//nologo', $processWrapper, $processOutput, $env:ComSpec, '1', '/d', '/c', 'ping -n 4 127.0.0.1 >nul') 'installer timeout'
+
+    $detachedStarted = Get-Date
+    Invoke-ExpectExit 0 $cscript @('//nologo', $processWrapper, $processOutput, $env:ComSpec, '30', '--detached', '/d', '/c', 'ping -n 20 127.0.0.1 >nul') 'detached installer start'
+    Assert-True -Condition (((Get-Date) - $detachedStarted).TotalSeconds -lt 5) -Message 'detached start waited for the child process to exit.'
+    $detachedOutput = Get-Content -LiteralPath $processOutput -Raw
+    Assert-True -Condition ($detachedOutput -match 'PID=\d+') -Message 'detached start did not record a PID.'
+    if ($detachedOutput -match 'PID=(\d+)') {
+        Stop-Process -Id ([int]$Matches[1]) -Force -ErrorAction SilentlyContinue
+    }
 
     Write-Output 'Antreva Desk installer scenario verification passed.'
 }
