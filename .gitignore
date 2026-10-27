@@ -12,3 +12,4 @@ upstream/**/build/
 upstream/**/.dart_tool/
 upstream/**/.flutter-plugins
 upstream/**/.flutter-plugins-dependencies
+__pycache__/

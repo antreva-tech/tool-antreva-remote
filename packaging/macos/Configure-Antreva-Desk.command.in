@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+fail() { echo "Antreva Desk: $*" >&2; read -r -p 'Press Return to close.' _; exit 1; }
+[[ "$(uname -s)" == Darwin ]] || fail 'macOS is required.'
+[[ "$EUID" -ne 0 ]] || fail 'Open this setup as the signed-in Mac user, without sudo.'
+[[ "$(/usr/bin/stat -f %u /dev/console)" == "$UID" ]] || fail 'Run setup from the active desktop session.'
+app=/Applications/RustDesk.app
+binary="$app/Contents/MacOS/RustDesk"
+[[ -x "$binary" ]] || fail 'Install the Antreva Desk package first.'
+/usr/bin/codesign --verify --deep --strict "$app" || fail 'RustDesk signature verification failed.'
+echo 'Antreva Desk @@VERSION@@ - authorized Mac onboarding'
+echo 'This enables password-protected remote control and bidirectional file transfer through Antreva.'
+read -r -p 'Continue with authorized setup? [y/N] ' consent
+[[ "$consent" == y || "$consent" == Y ]] || exit 0
+/usr/bin/open -a "$app"
+cat <<'INSTRUCTIONS'
+In RustDesk:
+  1. Enable/install its service and approve the Mac administrator prompt.
+  2. Grant Accessibility and Screen Recording in System Settings > Privacy & Security.
+     Grant Input Monitoring if requested. Reopen RustDesk if macOS asks.
+  3. Under Settings > Security, set a strong permanent support password.
+     Keep the password private; do not enter it into this Terminal window.
+INSTRUCTIONS
+read -r -p 'Press Return after completing these steps (Ctrl-C cancels). ' _
+/bin/launchctl print "gui/$UID/com.carriez.RustDesk_server" >/dev/null 2>&1 || fail 'RustDesk user agent is not loaded. Reopen RustDesk or sign out and back in, then rerun setup.'
+echo 'Approve the administrator prompt to apply Antreva settings. A separate administrator account is supported.'
+if ! /usr/bin/osascript <<'APPLESCRIPT'
+do shell script quoted form of "/Applications/Antreva Desk/Apply Antreva Policy.sh" with prompt "Antreva Desk needs to configure RustDesk for authorized remote support." with administrator privileges
+APPLESCRIPT
+then
+    fail 'Policy setup failed or administrator authorization was cancelled. Rerun setup to retry.'
+fi
+echo 'Antreva server and managed-access options were confirmed by RustDesk.'
+echo 'Setup still requires a technician to test the password, remote control, and file transfer in both directions.'
+echo 'Permissions and password readiness must be verified in that live session.'
+/usr/bin/open -a "$app"
+read -r -p 'Press Return to close. ' _

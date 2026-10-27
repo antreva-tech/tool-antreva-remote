@@ -1,0 +1,46 @@
+name: Build Mac Installers
+
+on:
+  push:
+    branches: [main, codex/macos-support]
+    paths:
+      - '.github/workflows/build-macos-installers.yml'
+      - 'scripts/*macos*.py'
+      - 'packaging/macos/**'
+      - 'config/macos-payloads.json'
+      - 'config/antreva-client-policy.json'
+      - 'docs/operations/MACOS-SUPPORT.md'
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: macOS ${{ matrix.arch }} installer
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: macos-15-intel
+            label: Intel
+          - arch: arm64
+            runner: macos-14
+            label: Apple-Silicon
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test installer generation and shell syntax
+        run: python3 -m unittest discover -s tests -p 'test_macos*.py' -v
+      - name: Build and inspect native package
+        run: python3 scripts/build-macos-installers.py --arch '${{ matrix.arch }}'
+      - name: Upload downloadable installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Antreva-Desk-1.0.6-macOS-${{ matrix.label }}
+          path: artifacts/macos/*
+          if-no-files-found: error
+          retention-days: 30

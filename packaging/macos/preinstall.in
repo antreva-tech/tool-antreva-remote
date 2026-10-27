@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+fail() { echo "Antreva Desk: $*" >&2; exit 1; }
+[[ "$(uname -s)" == Darwin ]] || fail 'macOS is required.'
+[[ "${3:-/}" == / ]] || fail 'Install on the current startup disk only.'
+# sysctl detects native Apple Silicon even when Installer runs under Rosetta.
+native_arch=$(uname -m)
+if [[ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || true)" == 1 ]]; then
+    native_arch=arm64
+fi
+[[ "$native_arch" == '@@ARCH@@' ]] || fail 'This installer is for @@LABEL@@ Macs. Download the installer matching this Mac processor.'
+major=$(/usr/bin/sw_vers -productVersion | /usr/bin/cut -d. -f1)
+[[ "$major" -ge 12 ]] || fail 'Antreva Desk requires macOS 12 Monterey or newer.'
+if /usr/bin/pgrep -if '/Applications/RustDesk.app/Contents/MacOS/' >/dev/null; then
+    fail 'Quit RustDesk and stop its service before installing. An active remote session cannot upgrade itself.'
+fi
+if [[ -e /Library/LaunchDaemons/com.carriez.RustDesk_service.plist || -e /Library/LaunchAgents/com.carriez.RustDesk_server.plist ]]; then
+    fail 'Remove the existing RustDesk service through its settings before installing, then quit RustDesk. Configure it again after installation.'
+fi
+[[ ! -L /Applications/RustDesk.app && ! -L '/Applications/Antreva Desk' ]] || fail 'Application destinations must not be symbolic links.'

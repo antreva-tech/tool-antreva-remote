@@ -1,0 +1,2 @@
+packaging/macos/*.in text eol=lf
+scripts/*macos*.py text eol=lf

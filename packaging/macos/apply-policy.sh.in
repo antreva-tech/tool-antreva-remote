@@ -1,0 +1,20 @@
+#!/bin/bash
+set -euo pipefail
+fail() { echo "Antreva Desk: $*" >&2; exit 1; }
+[[ "$EUID" -eq 0 ]] || fail 'Administrator authorization is required.'
+binary=/Applications/RustDesk.app/Contents/MacOS/RustDesk
+/usr/bin/codesign --verify --deep --strict /Applications/RustDesk.app || fail 'RustDesk signature verification failed.'
+service=$(/bin/launchctl print system/com.carriez.RustDesk_service) || fail 'Enable the RustDesk service and rerun setup.'
+[[ "$service" == *'state = running'* ]] || fail 'RustDesk service is registered but not running.'
+apply_option() {
+    local key="$1" value="$2" actual attempt
+    "$binary" --option "$key" "$value" || fail "Could not apply $key."
+    for attempt in {1..10}; do
+        actual=$("$binary" --option "$key") || fail "Could not read $key."
+        actual=${actual//$'\r'/}
+        [[ "$actual" == "$value" ]] && return 0
+        /bin/sleep 1
+    done
+    fail "RustDesk did not confirm policy option $key. Setup is incomplete."
+}
+@@POLICY@@
