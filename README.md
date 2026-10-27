@@ -94,6 +94,19 @@ authorized onboarding. Alternate administrator credentials are supported:
 machine-wide setup runs elevated, while the original user waits for the result
 and launches the app without elevation.
 
+## Mac Installers
+
+Native Intel and Apple Silicon `.pkg` installers are built by the
+[Build Mac Installers workflow](https://github.com/antreva-tech/tool-antreva-remote/actions/workflows/build-macos-installers.yml).
+Download the matching workflow artifact, install the package, then open
+**Applications > Antreva Desk > Configure Antreva Desk.command** to configure
+Antreva access and complete the Mac permission prompts.
+
+These are unsigned test artifacts until Apple signing, notarization and live
+Mac certification are completed. The separate protected Mac release workflow
+publishes signed installers to GitHub Releases. See
+[Mac setup and release instructions](docs/operations/MACOS-SUPPORT.md).
+
 ## License
 
 RustDesk and RustDesk Server are AGPL-3.0 projects. Antreva Desk keeps the

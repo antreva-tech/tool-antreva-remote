@@ -37,6 +37,16 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_macos*.py' -v
       - name: Build and inspect native package
         run: python3 scripts/build-macos-installers.py --arch '${{ matrix.arch }}'
+      - name: Smoke test installation on the native Mac runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          packages=(artifacts/macos/*.pkg)
+          sudo installer -pkg "${packages[0]}" -target /
+          codesign --verify --deep --strict /Applications/RustDesk.app
+          [[ "$(/Applications/RustDesk.app/Contents/MacOS/RustDesk --version)" == 1.5.0 ]]
+          [[ "$(stat -f '%Su:%Sg' '/Applications/Antreva Desk/Apply Antreva Policy.sh')" == root:wheel ]]
+          bash -n '/Applications/Antreva Desk/Configure Antreva Desk.command'
       - name: Upload downloadable installer
         uses: actions/upload-artifact@v4
         with:

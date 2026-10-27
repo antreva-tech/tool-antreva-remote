@@ -71,6 +71,8 @@ Output is under `artifacts/macos`: a `.pkg`, SHA-256 file, and provenance JSON
 for each processor. GitHub Actions builds and inspects the packages on native
 Intel and Apple Silicon runners. CI checks signatures, payload versions and
 native architectures, and extracts each resulting package to verify its app.
+It also installs the package on each native runner, launches the installed
+binary's version command, and checks the administrator helper's ownership.
 CI does not install a service or exercise macOS privacy dialogs.
 
 Unsigned previews are distributed through workflow artifacts only, preserving
