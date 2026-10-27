@@ -101,12 +101,12 @@ exit /b 0
 New-Item -ItemType Directory -Force -Path $testRoot | Out-Null
 try {
     $generatedPath = Join-Path $testRoot 'Antreva-Remote-Pilot-Setup.cmd'
-    & $generatorPath -PolicyPath $policyPath -TemplatePath $templatePath -OutputPath $generatedPath -Version '1.0.5' | Out-Null
+    & $generatorPath -PolicyPath $policyPath -TemplatePath $templatePath -OutputPath $generatedPath -Version '1.0.6' | Out-Null
     $generated = Get-Content -LiteralPath $generatedPath -Raw
     $policy = Get-Content -LiteralPath $policyPath -Raw | ConvertFrom-Json
 
     Assert-True -Condition (-not ($generated -match '@@[A-Z0-9_]+@@')) -Message 'generated CMD has unresolved placeholders.'
-    Assert-True -Condition ($generated.Contains('set "ANTREVA_VERSION=1.0.5"')) -Message 'generated CMD version is not 1.0.5.'
+    Assert-True -Condition ($generated.Contains('set "ANTREVA_VERSION=1.0.6"')) -Message 'generated CMD version is not 1.0.6.'
     foreach ($property in $policy.rustdeskOptions.PSObject.Properties) {
         $apply = "call :SetRustDeskOption `"$($property.Name)`" `"$([string]$property.Value)`""
         $verify = "call :VerifyRustDeskOption `"$($property.Name)`" `"$([string]$property.Value)`""
@@ -152,10 +152,10 @@ try {
     Assert-True -Condition (-not (Test-InstallState $true $payloadHash ('B' * 64) $true)) -Message 'wrong installed hash was accepted.'
     Assert-True -Condition (Test-InstallState $true $payloadHash $payloadHash $true) -Message 'upgrade to exact payload state was rejected.'
 
-    $pinnedX64Hash = 'F0053229FA2A2459C8B86F326C3E7423018A72F010F9758DC21BE171B112D1B2'
-    $legacySpacedHash = 'f0 05 32 29 fa 2a 24 59 c8 b8 6f 32 6c 3e 74 23 01 8a 72 f0 10 f9 75 8d c2 1b e1 71 b1 12 d1 b2'
-    $compactHash = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2'
-    $changedHash = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b3'
+    $pinnedX64Hash = '8555777215510D83D2D61C9DC984E4FCC838BD7E79F9D18A42585431F5E8BB47'
+    $legacySpacedHash = '85 55 77 72 15 51 0d 83 d2 d6 1c 9d c9 84 e4 fc c8 38 bd 7e 79 f9 d1 8a 42 58 54 31 f5 e8 bb 47'
+    $compactHash = '8555777215510d83d2d61c9dc984e4fcc838bd7e79f9d18a42585431f5e8bb47'
+    $changedHash = '8555777215510d83d2d61c9dc984e4fcc838bd7e79f9d18a42585431f5e8bb48'
     Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine $legacySpacedHash -ExpectedHash $pinnedX64Hash) -eq 0) -Message 'legacy space-separated certutil SHA-256 was rejected.'
     Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine $compactHash -ExpectedHash $pinnedX64Hash) -eq 0) -Message 'compact certutil SHA-256 was rejected.'
     Assert-True -Condition ((Invoke-NormalizedCertUtilCompare -HashLine $changedHash -ExpectedHash $pinnedX64Hash) -eq 1) -Message 'changed payload hash was accepted.'

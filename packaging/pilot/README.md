@@ -1,6 +1,6 @@
-# Antreva Desk 1.0.5 Managed Access Test Bundle
+# Antreva Desk 1.0.6 Managed Access Test Bundle
 
-`Antreva-Desk-1.0.5-Windows.zip` is a zero-PowerShell Command Prompt bundle
+`Antreva-Desk-1.0.6-Windows.zip` is a zero-PowerShell Command Prompt bundle
 for controlled Windows certification. Ordinary pull-request and `main`
 workflows upload it as a 30-day test artifact. It is not client-ready and must
 not be presented as the latest public release unless the separate protected
@@ -8,7 +8,7 @@ release workflow completes Antreva signing and live Windows certification.
 The documented test matrix spans Windows 7 SP1 through Windows 11 x86/x64,
 subject to the explicit build allowlist and live gates below.
 
-The test bundle contains the pinned RustDesk `1.4.8` x64 and x86 Sciter
+The test bundle contains the pinned RustDesk `1.5.0` x64 and x86 Sciter
 payloads, the generated `Antreva-Remote-Pilot-Setup.cmd`, and Windows Script
 Host helpers for elevation, bounded process execution, service inspection, and
 exact configuration verification. No PowerShell file or invocation is shipped
@@ -49,8 +49,8 @@ receives it; this is unavoidable with the pinned RustDesk CLI.
 - `AntrevaDesk-ProcessWrapper.vbs`
 - `AntrevaDesk-VerifyService.vbs`
 - `AntrevaDesk-VerifyConfig.vbs`
-- `payloads\x64\rustdesk-1.4.8-x86_64.exe`
-- `payloads\x86\rustdesk-1.4.8-x86-sciter.exe`
+- `payloads\x64\rustdesk-1.5.0-x86_64.exe`
+- `payloads\x86\rustdesk-1.5.0-x86-sciter.exe`
 
 ## Non-installing CI Check
 
@@ -66,5 +66,5 @@ not Windows certification.
 ## Release Boundary
 
 The pinned x86 Sciter payload must successfully launch on live Windows 7 SP1
-x86 before 1.0.5 can be public. If it fails, block 1.0.5 and open a separate
+x86 before 1.0.6 can be public. If it fails, block 1.0.6 and open a separate
 pinned-payload selection task; do not silently downgrade the payload.

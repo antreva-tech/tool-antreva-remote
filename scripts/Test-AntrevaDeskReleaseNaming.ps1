@@ -7,14 +7,14 @@ $ScriptDir = if ($PSScriptRoot) { $PSScriptRoot } else { Split-Path -Parent $MyI
 $Root = Resolve-Path (Join-Path $ScriptDir '..')
 
 $expectedProduct = 'Antreva Desk'
-$expectedVersion = '1.0.5'
+$expectedVersion = '1.0.6'
 $expectedReleaseTitle = "$expectedProduct $expectedVersion"
 $expectedBundleName = "Antreva-Desk-$expectedVersion-Windows"
 $expectedZipName = "$expectedBundleName.zip"
 $expectedChecksumName = "$expectedBundleName.sha256.txt"
-$expectedTagName = 'antreva-desk-1.0.5'
+$expectedTagName = 'antreva-desk-1.0.6'
 $retiredGuiName = 'AntrevaDesk-Setup'
-$previousReleaseTag = 'antreva-desk-1.0.4'
+$previousReleaseTag = 'antreva-desk-1.0.5'
 $legacyBundleName = 'Antreva-Remote-Pilot-RustDesk-1.4.8'
 
 $workflow = Get-Content -LiteralPath (Join-Path $Root '.github\workflows\build-and-release-installers.yml') -Raw
