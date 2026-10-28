@@ -2,7 +2,7 @@
 setlocal EnableExtensions DisableDelayedExpansion
 
 set "ANTREVA_VERSION=@@ANTREVA_VERSION@@"
-set "RUSTDESK_VERSION=1.4.8"
+set "RUSTDESK_VERSION=1.5.0"
 set "SCRIPT_DIR=%~dp0"
 set "SERVER_HOST=@@SERVER_HOST@@"
 set "RELAY_HOST=@@RELAY_HOST@@"
@@ -198,10 +198,10 @@ if not defined SELECTED_ARCH (
 )
 
 if "%SELECTED_ARCH%"=="x64" (
-  set "PAYLOAD_FILE=rustdesk-1.4.8-x86_64.exe"
+  set "PAYLOAD_FILE=rustdesk-1.5.0-x86_64.exe"
   set "PAYLOAD_HASH=@@X64_PAYLOAD_HASH@@"
 ) else (
-  set "PAYLOAD_FILE=rustdesk-1.4.8-x86-sciter.exe"
+  set "PAYLOAD_FILE=rustdesk-1.5.0-x86-sciter.exe"
   set "PAYLOAD_HASH=@@X86_PAYLOAD_HASH@@"
 )
 set "PAYLOAD_PATH=%SCRIPT_DIR%payloads\%SELECTED_ARCH%\%PAYLOAD_FILE%"

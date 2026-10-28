@@ -19,14 +19,14 @@ Complete this checklist before distributing a build to clients.
 - [ ] Each certification VM passes rebooted service state, exact
       server/relay/key persistence, password authentication, remote control,
       and bidirectional file transfer.
-- [ ] The pinned RustDesk 1.4.8 x86 Sciter payload launches on Windows 7 SP1
-      x86; failure blocks 1.0.5 without a silent payload downgrade.
+- [ ] The pinned RustDesk 1.5.0 x86 Sciter payload launches on Windows 7 SP1
+      x86; failure blocks 1.0.6 without a silent payload downgrade.
 - [ ] Windows 7 prerequisite failures for KB4490628 and KB4474419 are visible
       before install.
 - [ ] Windows binaries are signed with the Antreva code signing certificate.
 - [ ] Source archive or repository tag is published for the exact build.
 - [ ] AGPL/source link is present near the binary download.
-- [ ] PR and `main` workflows expose `Antreva-Desk-1.0.5-Windows.zip` only as
+- [ ] PR and `main` workflows expose `Antreva-Desk-1.0.6-Windows.zip` only as
       a 30-day test artifact.
 - [ ] The protected manual release workflow verifies the Antreva signer and
       attaches the hashed Windows certification archive before publishing.

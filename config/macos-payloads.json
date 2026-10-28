@@ -1,0 +1,17 @@
+{
+  "version": "1.0.6",
+  "rustdeskVersion": "1.5.0",
+  "sourceCommit": "fada664df7a294d1d1a9ca3e7cd3637069122f17",
+  "payloads": {
+    "x86_64": {
+      "label": "Intel",
+      "file": "rustdesk-1.5.0-x86_64.dmg",
+      "sha256": "1ca3cbfbe7f2bd28b50c93fcd50d4a0b671dc76d18be27cea99d3a65767eb526"
+    },
+    "arm64": {
+      "label": "Apple-Silicon",
+      "file": "rustdesk-1.5.0-aarch64.dmg",
+      "sha256": "3929b0a4321e7d0f561a317059798be882d65decc59681eb77061f8efe56fbf4"
+    }
+  }
+}

@@ -3,8 +3,8 @@ param(
     [string]$PolicyPath,
     [string]$ArtifactsDir,
     [string]$OutputDir,
-    [string]$X64PayloadSha256 = 'f0053229fa2a2459c8b86f326c3e7423018a72f010f9758dc21be171b112d1b2',
-    [string]$X86PayloadSha256 = '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7',
+    [string]$X64PayloadSha256 = '8555777215510d83d2d61c9dc984e4fcc838bd7e79f9d18a42585431f5e8bb47',
+    [string]$X86PayloadSha256 = '9f5e99ed33c08d3f61dd4e3d0dc06b927836bb518acd7047ffb0a68b9b138bf0',
     [string]$PayloadSignerThumbprint = '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
 )
 
@@ -23,8 +23,8 @@ if ([string]::IsNullOrWhiteSpace($OutputDir)) {
     $OutputDir = Join-Path $Root 'artifacts'
 }
 
-$RustDeskVersion = '1.4.8'
-$AntrevaDeskVersion = '1.0.5'
+$RustDeskVersion = '1.5.0'
+$AntrevaDeskVersion = '1.0.6'
 $BundleName = "Antreva-Desk-$AntrevaDeskVersion-Windows"
 $BundleDir = Join-Path $OutputDir $BundleName
 $ZipPath = Join-Path $OutputDir "$BundleName.zip"
@@ -33,14 +33,14 @@ $PayloadStageDir = Join-Path $BundleDir 'payloads'
 
 $Payloads = @{
     x64 = @{
-        FileName = 'rustdesk-1.4.8-x86_64.exe'
-        DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$RustDeskVersion/rustdesk-1.4.8-x86_64.exe"
+        FileName = 'rustdesk-1.5.0-x86_64.exe'
+        DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$RustDeskVersion/rustdesk-1.5.0-x86_64.exe"
         Sha256 = $X64PayloadSha256
         SignerThumbprint = $PayloadSignerThumbprint
     }
     x86 = @{
-        FileName = 'rustdesk-1.4.8-x86-sciter.exe'
-        DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$RustDeskVersion/rustdesk-1.4.8-x86-sciter.exe"
+        FileName = 'rustdesk-1.5.0-x86-sciter.exe'
+        DownloadUrl = "https://github.com/rustdesk/rustdesk/releases/download/$RustDeskVersion/rustdesk-1.5.0-x86-sciter.exe"
         Sha256 = $X86PayloadSha256
         SignerThumbprint = $PayloadSignerThumbprint
     }

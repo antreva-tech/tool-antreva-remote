@@ -50,7 +50,7 @@ $generatedSetupPath = Join-Path ([System.IO.Path]::GetTempPath()) "AntrevaDesk-W
     -PolicyPath (Join-Path $Root 'config\antreva-client-policy.json') `
     -TemplatePath (Join-Path $Root 'packaging\pilot\Antreva-Remote-Pilot-Setup.cmd.in') `
     -OutputPath $generatedSetupPath `
-    -Version '1.0.5' | Out-Null
+    -Version '1.0.6' | Out-Null
 $setupCmd = Get-Content -LiteralPath $generatedSetupPath -Raw
 Remove-Item -LiteralPath $generatedSetupPath -Force
 $bundleScript = Read-RepoFile 'scripts\Build-PilotBundle.ps1'
@@ -80,10 +80,10 @@ foreach ($expected in @(
     'wmic.exe',
     'certutil.exe -hashfile',
     '--verify-bundle',
-    'rustdesk-1.4.8-x86_64.exe',
-    'rustdesk-1.4.8-x86-sciter.exe',
-    'F0053229FA2A2459C8B86F326C3E7423018A72F010F9758DC21BE171B112D1B2',
-    '10A14578ED3ADBAB66BFE5C8DAA0D49D07E002D48F69F303966EA349F58DFEA7'
+    'rustdesk-1.5.0-x86_64.exe',
+    'rustdesk-1.5.0-x86-sciter.exe',
+    '8555777215510D83D2D61C9DC984E4FCC838BD7E79F9D18A42585431F5E8BB47',
+    '9F5E99ED33C08D3F61DD4E3D0DC06B927836BB518ACD7047FFB0A68B9B138BF0'
 )) {
     Assert-Contains -Name 'Command Prompt compatibility and payload preflight' -Text $setupCmd -Expected $expected
 }
@@ -103,8 +103,8 @@ Assert-NotContains -Name 'CI bundle verification client OS independence' -Text $
 Assert-Contains -Name 'real installation client OS preflight' -Text $runSetupBlock -Expected 'call :PreflightWindows'
 Assert-Contains -Name 'real installation Windows Server rejection' -Text $setupCmd -Expected 'Windows Server is not certified.'
 
-Assert-Contains -Name 'pilot bundle RustDesk version' -Text $bundleScript -Expected '$RustDeskVersion = ''1.4.8'''
-foreach ($expected in @('rustdesk-1.4.8-x86_64.exe', 'rustdesk-1.4.8-x86-sciter.exe', '10a14578ed3adbab66bfe5c8daa0d49d07e002d48f69f303966ea349f58dfea7')) {
+Assert-Contains -Name 'pilot bundle RustDesk version' -Text $bundleScript -Expected '$RustDeskVersion = ''1.5.0'''
+foreach ($expected in @('rustdesk-1.5.0-x86_64.exe', 'rustdesk-1.5.0-x86-sciter.exe', '9f5e99ed33c08d3f61dd4e3d0dc06b927836bb518acd7047ffb0a68b9b138bf0')) {
     Assert-Contains -Name 'pilot bundle architecture payloads' -Text $bundleScript -Expected $expected
 }
 Assert-Contains -Name 'pilot bundle pinned publisher' -Text $bundleScript -Expected '4230334F8A7DD84E50D0273EF379E8B4A82F5DA5'
@@ -121,7 +121,7 @@ foreach ($unexpected in @('Configure-And-Launch-Antreva-Remote-Pilot.ps1', 'Antr
 }
 Assert-NotContains -Name 'active workflow NSIS dependency' -Text $workflow -Unexpected 'Install NSIS'
 Assert-NotContains -Name 'active workflow GUI installer' -Text $workflow -Unexpected 'AntrevaDesk-Setup'
-Assert-Contains -Name 'active workflow Command Prompt zip' -Text $workflow -Expected 'Antreva-Desk-1.0.5-Windows.zip'
+Assert-Contains -Name 'active workflow Command Prompt zip' -Text $workflow -Expected 'Antreva-Desk-1.0.6-Windows.zip'
 Assert-Contains -Name 'active workflow CMD verification' -Text $workflow -Expected 'shell: cmd'
 Assert-Contains -Name 'active workflow zero-PowerShell verification mode' -Text $workflow -Expected '--verify-bundle'
 Assert-Contains -Name 'repository test wiring' -Text $repositoryTest -Expected 'Test-AntrevaDeskWindowsSupport.ps1'
